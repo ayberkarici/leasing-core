@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ proposal.title }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #333;
+            padding: 40px;
+        }
+        
+        .header {
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        
+        .logo-subtitle {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+        
+        .header-right {
+            text-align: right;
+        }
+        
+        .proposal-number {
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        .proposal-date {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e293b;
+        }
+        
+        h1 {
+            font-size: 26px;
+            color: #1e293b;
+            margin-bottom: 10px;
+            margin-top: 20px;
+        }
+        
+        h2 {
+            font-size: 18px;
+            color: #2563eb;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        
+        h3 {
+            font-size: 14px;
+            color: #475569;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+        
+        p {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+        
+        .customer-info {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .customer-info h3 {
+            margin-top: 0;
+            color: #2563eb;
+        }
+        
+        .customer-info p {
+            margin-bottom: 5px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .equipment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .equipment-table th {
+            background: #2563eb;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        
+        .equipment-table td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            font-size: 11px;
+        }
+        
+        .equipment-table tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        
+        .pricing-box {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px solid #2563eb;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+        
+        .pricing-box h3 {
+            color: #2563eb;
+            margin-top: 0;
+            font-size: 16px;
+        }
+        
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #cbd5e1;
+        }
+        
+        .price-row:last-child {
+            border-bottom: none;
+            padding-top: 15px;
+            margin-top: 10px;
+            border-top: 2px solid #2563eb;
+        }
+        
+        .price-label {
+            color: #475569;
+        }
+        
+        .price-value {
+            font-weight: bold;
+            color: #1e293b;
+        }
+        
+        .price-total .price-value {
+            font-size: 20px;
+            color: #2563eb;
+        }
+        
+        .benefits-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .benefits-list li {
+            padding: 8px 0 8px 30px;
+            position: relative;
+        }
+        
+        .benefits-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #10b981;
+            font-weight: bold;
+        }
+        
+        .terms-list {
+            list-style: decimal;
+            padding-left: 20px;
+        }
+        
+        .terms-list li {
+            padding: 5px 0;
+            font-size: 10px;
+            color: #64748b;
+        }
+        
+        .validity-notice {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 25px 0;
+            font-size: 12px;
+            color: #92400e;
+        }
+        
+        .signature-area {
+            margin-top: 60px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .signature-box {
+            width: 45%;
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #333;
+            padding-top: 10px;
+            margin-top: 50px;
+        }
+        
+        .signature-label {
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 10px;
+            color: #64748b;
+            text-align: center;
+        }
+        
+        .footer p {
+            margin-bottom: 3px;
+            text-align: center;
+        }
+        
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <div class="logo">{{ company_info.name }}</div>
+            <div class="logo-subtitle">Leasing Çözümleri</div>
+        </div>
+        <div class="header-right">
+            <div class="proposal-number">Teklif No: {{ proposal.id }}</div>
+            <div class="proposal-date">{{ proposal.created_at|date:"d.m.Y" }}</div>
+        </div>
+    </div>
+    
+    <!-- Title -->
+    <h1>{{ proposal.title }}</h1>
+    
+    <!-- Customer Info -->
+    <div class="customer-info">
+        <h3>Müşteri Bilgileri</h3>
+        <p><strong>{{ customer.company_name|default:customer.full_name }}</strong></p>
+        {% if customer.address %}<p>{{ customer.address }}</p>{% endif %}
+        <p>{{ customer.email }}</p>
+        {% if customer.phone %}<p>{{ customer.phone }}</p>{% endif %}
+    </div>
+    
+    <!-- Sections -->
+    {% for section in sections %}
+    <div class="section">
+        <h2>{{ section.title }}</h2>
+        <p>{{ section.content|linebreaks }}</p>
+    </div>
+    {% endfor %}
+    
+    <!-- Equipment Table -->
+    {% if proposal.equipment_details %}
+    <h2>Ekipman Listesi</h2>
+    <table class="equipment-table">
+        <thead>
+            <tr>
+                <th>Ekipman</th>
+                <th>Marka/Model</th>
+                <th style="text-align: center;">Adet</th>
+                <th style="text-align: right;">Değer</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in proposal.equipment_details %}
+            <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.brand|default:"-" }} {{ item.model|default:"" }}</td>
+                <td style="text-align: center;">{{ item.quantity|default:1 }}</td>
+                <td style="text-align: right;">
+                    {% if item.estimated_value %}₺{{ item.estimated_value|floatformat:0 }}{% else %}-{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    
+    <!-- Pricing Box -->
+    <div class="pricing-box">
+        <h3>Finansal Özet</h3>
+        
+        <div class="price-row">
+            <span class="price-label">Toplam Ekipman Değeri</span>
+            <span class="price-value">
+                {% if proposal.equipment_value %}₺{{ proposal.equipment_value|floatformat:0 }}{% else %}Hesaplanacak{% endif %}
+            </span>
+        </div>
+        
+        <div class="price-row">
+            <span class="price-label">Kiralama Süresi</span>
+            <span class="price-value">{{ proposal.lease_term_months }} Ay</span>
+        </div>
+        
+        {% if proposal.down_payment %}
+        <div class="price-row">
+            <span class="price-label">Peşinat</span>
+            <span class="price-value">₺{{ proposal.down_payment|floatformat:0 }}</span>
+        </div>
+        {% endif %}
+        
+        <div class="price-row price-total">
+            <span class="price-label"><strong>Aylık Ödeme</strong></span>
+            <span class="price-value">
+                {% if proposal.monthly_payment %}₺{{ proposal.monthly_payment|floatformat:0 }}{% else %}Hesaplanacak{% endif %}
+            </span>
+        </div>
+    </div>
+    
+    <!-- Validity Notice -->
+    {% if proposal.valid_until %}
+    <div class="validity-notice">
+        <strong>⚠️ Geçerlilik:</strong> Bu teklif {{ proposal.valid_until|date:"d.m.Y" }} tarihine kadar geçerlidir.
+    </div>
+    {% endif %}
+    
+    <!-- Signature Area -->
+    <div class="signature-area">
+        <div class="signature-box">
+            <div class="signature-line">
+                <div class="signature-label">Teklif Veren</div>
+                <p>{{ proposal.salesperson.full_name|default:"Leasing Ekibi" }}</p>
+                <p>{{ company_info.name }}</p>
+            </div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line">
+                <div class="signature-label">Müşteri Onayı</div>
+                <p>{{ customer.company_name|default:customer.full_name }}</p>
+                <p>Tarih: ____/____/________</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <p><strong>{{ company_info.name }}</strong></p>
+        <p>{{ company_info.address }}</p>
+        <p>Tel: {{ company_info.phone }} | Email: {{ company_info.email }} | Web: {{ company_info.website }}</p>
+        <p style="margin-top: 10px; font-size: 9px;">
+            Bu belge gizlidir ve sadece alıcısına yöneliktir. İzinsiz çoğaltılması ve dağıtılması yasaktır.
+        </p>
+    </div>
+</body>
+</html>
+
+
+

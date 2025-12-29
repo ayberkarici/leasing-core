@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Belge Yükleme - Sipariş Oluştur{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+    <!-- Progress -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-slate-700">Adım {{ step }}/{{ total_steps }}</span>
+            <span class="text-sm text-slate-500">Belge Yükleme</span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-2">
+            <div class="bg-primary-600 h-2 rounded-full" style="width: 100%"></div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        <h2 class="text-xl font-bold text-slate-800 mb-2">Belge Yükleme</h2>
+        <p class="text-slate-500 mb-6">Başvurunuz için gerekli belgeleri yükleyin. Belgeleri şimdi yükleyebilir veya daha sonra tamamlayabilirsiniz.</p>
+        
+        <!-- Order Summary -->
+        <div class="bg-slate-50 rounded-xl p-4 mb-6">
+            <h3 class="text-sm font-semibold text-slate-700 mb-2">Sipariş Özeti</h3>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <div class="text-slate-500">Ekipman:</div>
+                <div class="text-slate-800">{{ object.get_equipment_type_display }} {% if object.equipment_brand %}({{ object.equipment_brand }}){% endif %}</div>
+                <div class="text-slate-500">Değer:</div>
+                <div class="text-slate-800">₺{{ object.equipment_value|floatformat:0 }}</div>
+                <div class="text-slate-500">Süre:</div>
+                <div class="text-slate-800">{{ object.lease_term_months }} Ay</div>
+            </div>
+        </div>
+        
+        <!-- Required Documents -->
+        <div class="space-y-4 mb-6">
+            <h3 class="text-sm font-semibold text-slate-700">Gerekli Belgeler</h3>
+            
+            {% for template in required_templates %}
+            <div class="flex items-center justify-between p-4 border border-slate-200 rounded-xl">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium text-slate-800">{{ template.name }}</div>
+                        <div class="text-xs text-slate-500">{{ template.allowed_extensions }} • Max {{ template.max_file_size_mb }}MB</div>
+                    </div>
+                </div>
+                <label class="cursor-pointer">
+                    <input type="file" class="hidden" data-template="{{ template.pk }}" data-type="{{ template.document_type }}" onchange="uploadFile(this)">
+                    <span class="px-3 py-1 text-sm bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100">Yükle</span>
+                </label>
+            </div>
+            {% empty %}
+            <p class="text-slate-500 text-center py-4">Zorunlu belge bulunmuyor</p>
+            {% endfor %}
+        </div>
+        
+        <!-- Uploaded Documents -->
+        {% if uploaded_documents %}
+        <div class="space-y-4 mb-6">
+            <h3 class="text-sm font-semibold text-slate-700">Yüklenen Belgeler</h3>
+            {% for doc in uploaded_documents %}
+            <div class="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-emerald-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <div>
+                        <div class="text-sm font-medium text-slate-800">{{ doc.title }}</div>
+                        <div class="text-xs text-slate-500">{{ doc.file_size_display }}</div>
+                    </div>
+                </div>
+                <span class="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full">Yüklendi</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="flex justify-between mt-8 pt-6 border-t border-slate-200">
+                <a href="{% url 'orders:wizard_step' object.pk 2 %}" class="px-6 py-3 text-slate-600 hover:text-slate-800">
+                    ← Geri
+                </a>
+                <button type="submit" class="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors">
+                    Siparişi Tamamla
+                    <svg class="w-5 h-5 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+function uploadFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const templateId = input.dataset.template;
+    const documentType = input.dataset.type;
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('template_id', templateId);
+    formData.append('document_type', documentType);
+    formData.append('customer_id', '{{ object.customer.pk }}');
+    formData.append('order_id', '{{ object.pk }}');
+    
+    fetch('{% url "documents:upload" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Belge yüklendi', 'success');
+            location.reload();
+        } else {
+            showToast(data.error || 'Yükleme başarısız', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Bir hata oluştu', 'error');
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}
+
+
+

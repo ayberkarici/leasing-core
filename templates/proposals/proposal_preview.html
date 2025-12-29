@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - Leasing Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <!-- Breadcrumb -->
+    <nav class="mb-6">
+        <ol class="flex items-center space-x-2 text-sm">
+            <li><a href="{% url 'proposals:list' %}" class="text-slate-500 hover:text-primary-600">Teklifler</a></li>
+            <li class="text-slate-400">/</li>
+            <li class="text-slate-800 font-medium">Önizleme</li>
+        </ol>
+    </nav>
+    
+    <!-- Header -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 mb-6">
+        <div class="flex items-start justify-between">
+            <div>
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-display font-bold text-slate-800">{{ proposal.title }}</h1>
+                    <span class="ml-3 px-3 py-1 text-sm rounded-full bg-amber-100 text-amber-700">
+                        Onay Bekliyor
+                    </span>
+                </div>
+                <p class="text-slate-600 mt-1">{{ proposal.customer.display_company_name }} için hazırlanan teklif</p>
+            </div>
+            
+            <div class="flex space-x-3">
+                <a href="{% url 'customers:customer_detail' proposal.customer.pk %}" 
+                   class="inline-flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Müşteri Kartına Dön
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content - Preview -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Email Preview -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-4">
+                    <h2 class="text-lg font-semibold text-white flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        Email Önizlemesi
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <div class="mb-4 pb-4 border-b border-slate-200">
+                        <p class="text-sm text-slate-500">Alıcı:</p>
+                        <p class="text-slate-800 font-medium">{{ proposal.customer.email }}</p>
+                    </div>
+                    <div class="mb-4 pb-4 border-b border-slate-200">
+                        <p class="text-sm text-slate-500">Konu:</p>
+                        <p class="text-slate-800 font-medium">{{ proposal.email_subject }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-500 mb-2">İçerik:</p>
+                        <div class="bg-slate-50 rounded-xl p-4 text-slate-700 whitespace-pre-wrap text-sm">{{ proposal.email_body }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PDF Preview -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-red-500 to-rose-500 px-6 py-4">
+                    <h2 class="text-lg font-semibold text-white flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        PDF Önizlemesi
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <div class="bg-white border border-slate-300 rounded-xl p-8 shadow-inner">
+                        <div class="prose prose-slate max-w-none">
+                            {{ proposal.pdf_content|safe }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar - Actions -->
+        <div class="space-y-6">
+            <!-- Summary Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4">
+                    <h2 class="text-lg font-semibold text-white">Teklif Özeti</h2>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="flex justify-between">
+                        <span class="text-slate-600">Ekipman Değeri</span>
+                        <span class="font-semibold text-slate-800">₺{{ proposal.equipment_value|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-600">Peşinat</span>
+                        <span class="font-semibold text-slate-800">₺{{ proposal.down_payment|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-600">Kiralama Süresi</span>
+                        <span class="font-semibold text-slate-800">{{ proposal.lease_term_months }} Ay</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-600">Aylık Ödeme</span>
+                        <span class="font-semibold text-emerald-600">₺{{ proposal.monthly_payment|floatformat:2 }}</span>
+                    </div>
+                    <hr class="border-slate-200">
+                    <div class="flex justify-between">
+                        <span class="text-slate-600 font-medium">Toplam Tutar</span>
+                        <span class="font-bold text-lg text-slate-800">₺{{ proposal.total_amount|floatformat:2 }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-600">Geçerlilik</span>
+                        <span class="font-medium text-slate-800">{{ proposal.valid_until|date:"d.m.Y" }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200">
+                    <h2 class="text-lg font-semibold text-slate-800">İşlemler</h2>
+                </div>
+                <div class="p-6 space-y-3">
+                    <button onclick="approveAndSend(true)" 
+                            class="w-full px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all font-medium flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        Onayla ve Müşteriye Gönder
+                    </button>
+                    
+                    <button onclick="approveAndSend(false)" 
+                            class="w-full px-4 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors font-medium flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Sadece Onayla (Mail Gönderme)
+                    </button>
+                    
+                    <a href="{% url 'proposals:edit' proposal.pk %}" 
+                       class="w-full px-4 py-3 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                        Düzenle
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Customer Info -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200">
+                    <h2 class="text-lg font-semibold text-slate-800">Müşteri Bilgisi</h2>
+                </div>
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-400 to-accent-400 flex items-center justify-center text-white font-bold mr-4">
+                            {{ proposal.customer.display_company_name|slice:":2"|upper }}
+                        </div>
+                        <div>
+                            <p class="font-semibold text-slate-800">{{ proposal.customer.display_company_name }}</p>
+                            <p class="text-sm text-slate-600">{{ proposal.customer.contact_person }}</p>
+                            <p class="text-sm text-slate-500">{{ proposal.customer.email }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrftoken = '{{ csrf_token }}';
+
+function approveAndSend(sendEmail) {
+    const action = sendEmail ? 'onaylayıp müşteriye göndermek' : 'onaylamak';
+    
+    if (!confirm(`Teklifi ${action} istediğinize emin misiniz?`)) {
+        return;
+    }
+    
+    fetch('{% url "proposals:approve" proposal.pk %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            send_email: sendEmail
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => {
+                window.location.href = '{% url "proposals:detail" proposal.pk %}';
+            }, 1500);
+        } else {
+            showToast(data.error || 'Bir hata oluştu', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Bir hata oluştu', 'error');
+    });
+}
+</script>
+{% endblock %}

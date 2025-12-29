@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Kiralama Detayları - Sipariş Oluştur{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-8">
+    <!-- Progress -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-slate-700">Adım {{ step }}/{{ total_steps }}</span>
+            <span class="text-sm text-slate-500">Kiralama Detayları</span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-2">
+            <div class="bg-primary-600 h-2 rounded-full" style="width: 66%"></div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+        <h2 class="text-xl font-bold text-slate-800 mb-6">Kiralama Detayları</h2>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="space-y-6">
+                <!-- Lease Type -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Kiralama Türü *</label>
+                    <select name="lease_type" required
+                            class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        {% for value, label in lease_types %}
+                        <option value="{{ value }}" {% if object.lease_type == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Term -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Kiralama Süresi (Ay) *</label>
+                    <select name="lease_term_months" required
+                            class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <option value="12" {% if object.lease_term_months == 12 %}selected{% endif %}>12 Ay</option>
+                        <option value="24" {% if object.lease_term_months == 24 %}selected{% endif %}>24 Ay</option>
+                        <option value="36" {% if object.lease_term_months == 36 or not object.lease_term_months %}selected{% endif %}>36 Ay</option>
+                        <option value="48" {% if object.lease_term_months == 48 %}selected{% endif %}>48 Ay</option>
+                        <option value="60" {% if object.lease_term_months == 60 %}selected{% endif %}>60 Ay</option>
+                    </select>
+                </div>
+                
+                <!-- Down Payment -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Peşinat (₺)</label>
+                    <input type="number" name="down_payment" value="{{ object.down_payment|floatformat:0 }}"
+                           min="0" step="1000"
+                           class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                           placeholder="100000">
+                    <p class="text-xs text-slate-500 mt-1">Opsiyonel - Peşinat ödemek aylık taksitleri düşürür</p>
+                </div>
+                
+                <!-- Requested Delivery -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">İstenen Teslim Tarihi</label>
+                    <input type="date" name="requested_delivery_date" value="{{ object.requested_delivery_date|date:'Y-m-d' }}"
+                           class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                
+                <!-- Notes -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Notlar</label>
+                    <textarea name="customer_notes" rows="3"
+                              class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                              placeholder="Ek bilgiler veya özel istekler...">{{ object.customer_notes }}</textarea>
+                </div>
+            </div>
+            
+            <div class="flex justify-between mt-8 pt-6 border-t border-slate-200">
+                <a href="{% url 'orders:wizard_step' object.pk 1 %}" class="px-6 py-3 text-slate-600 hover:text-slate-800">
+                    ← Geri
+                </a>
+                <button type="submit" class="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors">
+                    Devam
+                    <svg class="w-5 h-5 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                    </svg>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+
+

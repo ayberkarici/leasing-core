@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - Leasing Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <nav class="mb-4">
+            <ol class="flex items-center space-x-2 text-sm">
+                <li><a href="{% url 'tasks:task_list' %}" class="text-slate-500 hover:text-primary-600">Görevler</a></li>
+                <li class="text-slate-400">/</li>
+                <li class="text-slate-800 font-medium">{{ page_title }}</li>
+            </ol>
+        </nav>
+        <h1 class="text-3xl font-display font-bold text-slate-800">{{ page_title }}</h1>
+    </div>
+    
+    <!-- Form -->
+    <form method="post" class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+        {% csrf_token %}
+        
+        <!-- Basic Info -->
+        <div class="mb-8">
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Başlık *</label>
+                    <input type="text" name="title" value="{{ form.title.value|default:'' }}" required
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all"
+                           placeholder="Görev başlığı">
+                    {% if form.title.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.title.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Açıklama</label>
+                    <textarea name="description" rows="4"
+                              class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all"
+                              placeholder="Görev detayları...">{{ form.description.value|default:'' }}</textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Görev Tipi</label>
+                        <select name="task_type"
+                                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:outline-none transition-all">
+                            <option value="followup" {% if form.task_type.value == 'followup' or not form.task_type.value %}selected{% endif %}>Takip</option>
+                            <option value="proposal" {% if form.task_type.value == 'proposal' %}selected{% endif %}>Teklif Hazırla</option>
+                            <option value="document_review" {% if form.task_type.value == 'document_review' %}selected{% endif %}>Belge İncele</option>
+                            <option value="call" {% if form.task_type.value == 'call' %}selected{% endif %}>Telefon Görüşmesi</option>
+                            <option value="meeting" {% if form.task_type.value == 'meeting' %}selected{% endif %}>Toplantı</option>
+                            <option value="approval" {% if form.task_type.value == 'approval' %}selected{% endif %}>Onay Bekliyor</option>
+                            <option value="contract" {% if form.task_type.value == 'contract' %}selected{% endif %}>Sözleşme</option>
+                            <option value="other" {% if form.task_type.value == 'other' %}selected{% endif %}>Diğer</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Öncelik</label>
+                        <select name="manual_priority"
+                                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:outline-none transition-all">
+                            <option value="low" {% if form.manual_priority.value == 'low' %}selected{% endif %}>Düşük</option>
+                            <option value="medium" {% if form.manual_priority.value == 'medium' or not form.manual_priority.value %}selected{% endif %}>Orta</option>
+                            <option value="high" {% if form.manual_priority.value == 'high' %}selected{% endif %}>Yüksek</option>
+                            <option value="urgent" {% if form.manual_priority.value == 'urgent' %}selected{% endif %}>Acil</option>
+                        </select>
+                    </div>
+                </div>
+                
+                {% if is_edit %}
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Durum</label>
+                    <select name="status"
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:outline-none transition-all">
+                        <option value="pending" {% if form.status.value == 'pending' %}selected{% endif %}>Bekliyor</option>
+                        <option value="in_progress" {% if form.status.value == 'in_progress' %}selected{% endif %}>Devam Ediyor</option>
+                        <option value="waiting_response" {% if form.status.value == 'waiting_response' %}selected{% endif %}>Cevap Bekleniyor</option>
+                        <option value="completed" {% if form.status.value == 'completed' %}selected{% endif %}>Tamamlandı</option>
+                        <option value="cancelled" {% if form.status.value == 'cancelled' %}selected{% endif %}>İptal Edildi</option>
+                    </select>
+                </div>
+                {% endif %}
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Müşteri (Opsiyonel)</label>
+                    <select name="customer"
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:outline-none transition-all">
+                        <option value="">Müşteri seçin...</option>
+                        {% for customer in form.customer.field.queryset %}
+                        <option value="{{ customer.pk }}" {% if form.customer.value == customer.pk|stringformat:'s' %}selected{% endif %}>
+                            {{ customer.company_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Son Tarih</label>
+                        <input type="date" name="due_date" value="{{ form.due_date.value|date:'Y-m-d' }}"
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Hatırlatma</label>
+                        <input type="datetime-local" name="reminder_date" value="{{ form.reminder_date.value|date:'Y-m-d\TH:i' }}"
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI Priority Info -->
+        <div class="mb-8 p-4 bg-gradient-to-r from-primary-50 to-accent-50 rounded-xl border border-primary-100">
+            <div class="flex items-start">
+                <svg class="w-5 h-5 text-primary-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                <div>
+                    <p class="text-sm font-medium text-primary-800">AI Öncelik Skoru</p>
+                    <p class="text-sm text-primary-700 mt-1">Görev kaydedildikten sonra AI otomatik olarak öncelik skoru hesaplayacak. Skor; son tarih, müşteri önemi ve görev tipi gibi faktörlere göre belirlenir.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex justify-end space-x-4">
+            <a href="{% url 'tasks:task_list' %}" 
+               class="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors">
+                İptal
+            </a>
+            <button type="submit" 
+                    class="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors">
+                {% if is_edit %}Güncelle{% else %}Kaydet{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+
+

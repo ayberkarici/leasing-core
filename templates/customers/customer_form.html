@@ -1,0 +1,566 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - Leasing Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <nav class="mb-4">
+            <ol class="flex items-center space-x-2 text-sm">
+                <li><a href="{% url 'customers:customer_list' %}" class="text-slate-500 hover:text-primary-600">Müşteriler</a></li>
+                <li class="text-slate-400">/</li>
+                <li class="text-slate-800 font-medium">{{ page_title }}</li>
+            </ol>
+        </nav>
+        <h1 class="text-3xl font-display font-bold text-slate-800">{{ page_title }}</h1>
+    </div>
+    
+    <!-- Form -->
+    <form method="post" class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+        {% csrf_token %}
+        
+        <!-- Company Selection -->
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200">Şirket Bilgileri</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Şirket *</label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="company_search" 
+                               placeholder="Şirket adı yazın veya arayın..."
+                               autocomplete="off"
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all">
+                        <input type="hidden" name="company_id" id="company_id" value="{{ form.company.value|default:'' }}">
+                        
+                        <!-- Dropdown for search results -->
+                        <div id="company_dropdown" class="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg hidden max-h-60 overflow-y-auto">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Selected company display -->
+                    <div id="selected_company" class="mt-2 {% if not form.company.value %}hidden{% endif %}">
+                        <div class="flex items-center justify-between px-4 py-2 bg-primary-50 rounded-lg border border-primary-200">
+                            <span class="text-sm font-medium text-primary-700" id="selected_company_name">
+                                {% if customer and customer.company %}{{ customer.company.name }}{% endif %}
+                            </span>
+                            <button type="button" onclick="clearCompany()" class="text-primary-600 hover:text-primary-800">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Add new company button -->
+                    <button type="button" onclick="showNewCompanyModal()" 
+                            class="mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium inline-flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Yeni Şirket Ekle
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Basic Info -->
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200">İletişim Bilgileri</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">İlgili Kişi *</label>
+                    <input type="text" name="contact_person" value="{{ form.contact_person.value|default:'' }}" required
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Email *</label>
+                    <input type="email" name="email" value="{{ form.email.value|default:'' }}" required
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all">
+                    {% if form.email.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Telefon *</label>
+                    <input type="tel" name="phone" value="{{ form.phone.value|default:'' }}" required
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">İkinci Telefon</label>
+                    <input type="tel" name="secondary_phone" value="{{ form.secondary_phone.value|default:'' }}"
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notes Section Only -->
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200">Notlar</h2>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Notlar</label>
+                <textarea name="notes" rows="4" placeholder="İsteğe bağlı notlar..."
+                          class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all resize-none">{{ form.notes.value|default:'' }}</textarea>
+                <p class="mt-1 text-xs text-slate-500">Bu alan isteğe bağlıdır.</p>
+            </div>
+        </div>
+        
+        {% if not is_edit %}
+        <!-- KVKK Section (only for new customers) -->
+        <div class="mb-8">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-200 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                KVKK Belgesi
+            </h2>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 text-blue-500 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div class="flex-grow">
+                        <p class="text-sm text-blue-800">
+                            Müşteri kaydedildiğinde otomatik olarak varsayılan KVKK metni atanacaktır. 
+                            İsterseniz müşteriye özel metin düzenleyebilirsiniz.
+                        </p>
+                        <button type="button" onclick="showKVKKModal()"
+                                class="mt-3 inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            KVKK Metnini Görüntüle / Düzenle
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Hidden field for custom KVKK content -->
+                <input type="hidden" name="kvkk_content" id="kvkk_content_input" value="">
+                <div id="kvkk_custom_indicator" class="hidden mt-3 text-xs text-blue-600">
+                    ✓ Özel KVKK metni ayarlandı
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Actions -->
+        <div class="flex {% if is_edit %}justify-between{% else %}justify-end{% endif %} items-center">
+            {% if is_edit %}
+            <!-- Delete Button (only show when editing) -->
+            <button type="button" onclick="showDeleteModal()"
+                    class="px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors inline-flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Müşteriyi Sil
+            </button>
+            {% endif %}
+            
+            <div class="flex space-x-4">
+                <a href="{% url 'customers:customer_list' %}" 
+                   class="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors">
+                    İptal
+                </a>
+                <button type="submit" 
+                        class="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors">
+                    {% if is_edit %}Güncelle{% else %}Kaydet{% endif %}
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% if is_edit %}
+<!-- Delete Confirmation Modal -->
+<div id="delete_modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="hideDeleteModal()"></div>
+    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md">
+        <div class="bg-white rounded-2xl p-6 shadow-xl m-4">
+            <div class="text-center">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-slate-800 mb-2">Müşteriyi Sil</h3>
+                <p class="text-slate-600 mb-6">
+                    <strong>{{ customer.display_company_name }}</strong> müşterisini silmek istediğinize emin misiniz?
+                    <br><span class="text-sm text-slate-500">Bu işlem müşteriyi pasif hale getirecektir.</span>
+                </p>
+                
+                <div class="flex justify-center space-x-3">
+                    <button type="button" onclick="hideDeleteModal()" 
+                            class="px-6 py-2 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-colors">
+                        İptal
+                    </button>
+                    <button type="button" onclick="deleteCustomer()" 
+                            class="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors">
+                        Evet, Sil
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- New Company Modal -->
+<div id="new_company_modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="hideNewCompanyModal()"></div>
+    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-lg">
+        <div class="bg-white rounded-2xl p-6 shadow-xl m-4">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-semibold text-slate-800">Yeni Şirket Ekle</h3>
+                <button type="button" onclick="hideNewCompanyModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Şirket Adı *</label>
+                    <input type="text" id="new_company_name" 
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Vergi No</label>
+                        <input type="text" id="new_company_tax_number" 
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Sektör</label>
+                        <input type="text" id="new_company_sector" 
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Şehir</label>
+                    <input type="text" id="new_company_city" 
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-200 focus:outline-none transition-all">
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6">
+                <button type="button" onclick="hideNewCompanyModal()" 
+                        class="px-4 py-2 text-slate-600 hover:text-slate-800">
+                    İptal
+                </button>
+                <button type="button" onclick="createNewCompany()" 
+                        class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                    Şirket Ekle
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if not is_edit %}
+<!-- KVKK Edit Modal -->
+<div id="kvkk_modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50" onclick="hideKVKKModal()"></div>
+    <div class="absolute inset-4 lg:inset-12 flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-full flex flex-col">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+                <div>
+                    <h3 class="text-xl font-semibold text-slate-800">KVKK Aydınlatma Metni</h3>
+                    <p class="text-sm text-slate-500 mt-1">Bu müşteri için KVKK metnini düzenleyebilirsiniz</p>
+                </div>
+                <button type="button" onclick="hideKVKKModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Content -->
+            <div class="flex-grow overflow-y-auto p-6">
+                <div class="mb-4 flex items-center justify-between">
+                    <label class="text-sm font-medium text-slate-700">Metin İçeriği (HTML destekler)</label>
+                    <button type="button" onclick="resetKVKKToDefault()" 
+                            class="text-sm text-blue-600 hover:text-blue-700">
+                        Varsayılana Döndür
+                    </button>
+                </div>
+                <textarea id="kvkk_content_editor" 
+                          rows="20"
+                          class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all font-mono text-sm resize-none"></textarea>
+            </div>
+            
+            <!-- Footer -->
+            <div class="flex justify-end space-x-3 px-6 py-4 border-t border-slate-200">
+                <button type="button" onclick="hideKVKKModal()" 
+                        class="px-4 py-2 text-slate-600 hover:text-slate-800">
+                    İptal
+                </button>
+                <button type="button" onclick="saveKVKKContent()" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let searchTimeout = null;
+const companySearch = document.getElementById('company_search');
+const companyDropdown = document.getElementById('company_dropdown');
+const companyIdInput = document.getElementById('company_id');
+const selectedCompanyDiv = document.getElementById('selected_company');
+const selectedCompanyName = document.getElementById('selected_company_name');
+
+// Initialize with existing company if editing
+{% if customer and customer.company %}
+companySearch.value = '{{ customer.company.name }}';
+{% endif %}
+
+// Company search
+companySearch.addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const query = this.value.trim();
+    
+    if (query.length < 2) {
+        companyDropdown.classList.add('hidden');
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        searchCompanies(query);
+    }, 300);
+});
+
+companySearch.addEventListener('focus', function() {
+    if (this.value.trim().length >= 2) {
+        searchCompanies(this.value.trim());
+    }
+});
+
+document.addEventListener('click', function(e) {
+    if (!companySearch.contains(e.target) && !companyDropdown.contains(e.target)) {
+        companyDropdown.classList.add('hidden');
+    }
+});
+
+function searchCompanies(query) {
+    fetch(`{% url 'customers:search_companies' %}?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            companyDropdown.innerHTML = '';
+            
+            if (data.companies.length === 0) {
+                companyDropdown.innerHTML = `
+                    <div class="px-4 py-3 text-sm text-slate-500">
+                        Sonuç bulunamadı. 
+                        <button type="button" onclick="showNewCompanyModalWithName('${query}')" 
+                                class="text-primary-600 hover:text-primary-700 font-medium ml-1">
+                            "${query}" olarak yeni şirket ekle
+                        </button>
+                    </div>
+                `;
+            } else {
+                data.companies.forEach(company => {
+                    const div = document.createElement('div');
+                    div.className = 'px-4 py-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0';
+                    div.innerHTML = `
+                        <p class="font-medium text-slate-800">${company.name}</p>
+                        <p class="text-xs text-slate-500">${company.city || ''} ${company.sector ? '• ' + company.sector : ''}</p>
+                    `;
+                    div.onclick = () => selectCompany(company);
+                    companyDropdown.appendChild(div);
+                });
+            }
+            
+            companyDropdown.classList.remove('hidden');
+        });
+}
+
+function selectCompany(company) {
+    companyIdInput.value = company.id;
+    companySearch.value = company.name;
+    selectedCompanyName.textContent = company.name;
+    selectedCompanyDiv.classList.remove('hidden');
+    companyDropdown.classList.add('hidden');
+}
+
+function clearCompany() {
+    companyIdInput.value = '';
+    companySearch.value = '';
+    selectedCompanyDiv.classList.add('hidden');
+}
+
+function showNewCompanyModal() {
+    document.getElementById('new_company_modal').classList.remove('hidden');
+    document.getElementById('new_company_name').focus();
+}
+
+function showNewCompanyModalWithName(name) {
+    document.getElementById('new_company_name').value = name;
+    showNewCompanyModal();
+    companyDropdown.classList.add('hidden');
+}
+
+function hideNewCompanyModal() {
+    document.getElementById('new_company_modal').classList.add('hidden');
+    document.getElementById('new_company_name').value = '';
+    document.getElementById('new_company_tax_number').value = '';
+    document.getElementById('new_company_sector').value = '';
+    document.getElementById('new_company_city').value = '';
+}
+
+function createNewCompany() {
+    const name = document.getElementById('new_company_name').value.trim();
+    
+    if (!name) {
+        alert('Şirket adı gereklidir.');
+        return;
+    }
+    
+    const data = {
+        name: name,
+        tax_number: document.getElementById('new_company_tax_number').value.trim(),
+        sector: document.getElementById('new_company_sector').value.trim(),
+        city: document.getElementById('new_company_city').value.trim(),
+    };
+    
+    fetch('{% url "customers:create_company" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            selectCompany(result.company);
+            hideNewCompanyModal();
+        } else {
+            alert(result.error || 'Şirket oluşturulamadı.');
+        }
+    })
+    .catch(error => {
+        alert('Bir hata oluştu.');
+        console.error(error);
+    });
+}
+
+{% if is_edit %}
+// Delete modal functions
+function showDeleteModal() {
+    document.getElementById('delete_modal').classList.remove('hidden');
+}
+
+function hideDeleteModal() {
+    document.getElementById('delete_modal').classList.add('hidden');
+}
+
+function deleteCustomer() {
+    fetch('{% url "customers:customer_delete" customer.pk %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            window.location.href = '{% url "customers:customer_list" %}';
+        } else {
+            alert(result.error || 'Müşteri silinemedi.');
+            hideDeleteModal();
+        }
+    })
+    .catch(error => {
+        alert('Bir hata oluştu.');
+        console.error(error);
+        hideDeleteModal();
+    });
+}
+{% endif %}
+
+{% if not is_edit %}
+// KVKK Modal Functions
+let defaultKVKKContent = '';
+
+function showKVKKModal() {
+    const editor = document.getElementById('kvkk_content_editor');
+    const savedContent = document.getElementById('kvkk_content_input').value;
+    
+    // If no custom content, load default
+    if (!savedContent && !defaultKVKKContent) {
+        loadDefaultKVKKContent();
+    } else if (savedContent) {
+        editor.value = savedContent;
+    } else {
+        editor.value = defaultKVKKContent;
+    }
+    
+    document.getElementById('kvkk_modal').classList.remove('hidden');
+}
+
+function hideKVKKModal() {
+    document.getElementById('kvkk_modal').classList.add('hidden');
+}
+
+function loadDefaultKVKKContent() {
+    fetch('{% url "customers:kvkk_default_content" %}')
+        .then(response => response.json())
+        .then(data => {
+            defaultKVKKContent = data.content;
+            document.getElementById('kvkk_content_editor').value = defaultKVKKContent;
+        })
+        .catch(error => {
+            console.error('KVKK içeriği yüklenemedi:', error);
+        });
+}
+
+function resetKVKKToDefault() {
+    if (!defaultKVKKContent) {
+        loadDefaultKVKKContent();
+    } else {
+        document.getElementById('kvkk_content_editor').value = defaultKVKKContent;
+    }
+}
+
+function saveKVKKContent() {
+    const content = document.getElementById('kvkk_content_editor').value.trim();
+    document.getElementById('kvkk_content_input').value = content;
+    
+    // Show indicator if custom content is set
+    const indicator = document.getElementById('kvkk_custom_indicator');
+    if (content && content !== defaultKVKKContent) {
+        indicator.classList.remove('hidden');
+    } else {
+        indicator.classList.add('hidden');
+    }
+    
+    hideKVKKModal();
+}
+
+// Preload default KVKK content on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadDefaultKVKKContent();
+});
+{% endif %}
+</script>
+{% endblock %}

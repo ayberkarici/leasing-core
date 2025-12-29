@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - Leasing Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <nav class="text-sm text-slate-500 mb-2">
+                <ol class="flex items-center space-x-2">
+                    <li><a href="{% url 'dashboard' %}" class="hover:text-primary-600">Ana Sayfa</a></li>
+                    <li>/</li>
+                    <li class="text-slate-800">Siparişler</li>
+                </ol>
+            </nav>
+            <h1 class="text-2xl font-bold text-slate-800">{{ page_title }}</h1>
+        </div>
+        
+        {% if request.user.user_type == 'customer' %}
+        <a href="{% url 'orders:wizard_start' %}" 
+           class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Yeni Sipariş
+        </a>
+        {% elif request.user.user_type in 'salesperson,admin' %}
+        <a href="{% url 'orders:order_create' %}" 
+           class="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Sipariş Oluştur
+        </a>
+        {% endif %}
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+            <div class="text-2xl font-bold text-slate-800">{{ stats.total }}</div>
+            <div class="text-sm text-slate-500">Toplam Sipariş</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+            <div class="text-2xl font-bold text-amber-600">{{ stats.active }}</div>
+            <div class="text-sm text-slate-500">Aktif Sipariş</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+            <div class="text-2xl font-bold text-blue-600">{{ stats.pending_docs }}</div>
+            <div class="text-sm text-slate-500">Belge Bekliyor</div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-slate-200">
+            <div class="text-2xl font-bold text-emerald-600">{{ stats.completed }}</div>
+            <div class="text-sm text-slate-500">Tamamlandı</div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="bg-white rounded-xl p-4 border border-slate-200">
+        <form method="get" class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <input type="text" name="search" value="{{ current_filters.search }}"
+                       placeholder="Sipariş no veya müşteri ara..."
+                       class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            <div class="w-48">
+                <select name="status" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">Tüm Durumlar</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+                Filtrele
+            </button>
+        </form>
+    </div>
+    
+    <!-- Orders Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Sipariş No</th>
+                        {% if request.user.user_type != 'customer' %}
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Müşteri</th>
+                        {% endif %}
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Ekipman</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tutar</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Durum</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Tarih</th>
+                        <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    {% for order in orders %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <a href="{% url 'orders:order_detail' order.pk %}" class="font-medium text-primary-600 hover:text-primary-800">
+                                {{ order.order_number }}
+                            </a>
+                        </td>
+                        {% if request.user.user_type != 'customer' %}
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-slate-800">{{ order.customer.company_name }}</div>
+                            <div class="text-xs text-slate-500">{{ order.customer.contact_person }}</div>
+                        </td>
+                        {% endif %}
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-slate-800">{{ order.get_equipment_type_display }}</div>
+                            {% if order.equipment_brand %}
+                            <div class="text-xs text-slate-500">{{ order.equipment_brand }} {{ order.equipment_model }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-slate-800">₺{{ order.equipment_value|floatformat:0 }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full {{ order.status_display_class }}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-500">
+                            {{ order.created_at|date:"d.m.Y" }}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{% url 'orders:order_detail' order.pk %}" 
+                               class="text-slate-400 hover:text-primary-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-slate-500">
+                            <svg class="w-12 h-12 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <p>Henüz sipariş bulunmuyor.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="px-6 py-4 border-t border-slate-200">
+            <nav class="flex items-center justify-between">
+                <div class="text-sm text-slate-500">
+                    Toplam {{ page_obj.paginator.count }} sipariş
+                </div>
+                <div class="flex space-x-2">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 border border-slate-300 rounded-lg hover:bg-slate-50">Önceki</a>
+                    {% endif %}
+                    <span class="px-3 py-1 bg-primary-50 text-primary-700 rounded-lg">{{ page_obj.number }}</span>
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 border border-slate-300 rounded-lg hover:bg-slate-50">Sonraki</a>
+                    {% endif %}
+                </div>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+
+

@@ -1,0 +1,255 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="tr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Leasing Yönetim Sistemi">
+    <title>{% block title %}Leasing Yönetim Sistemi{% endblock %}</title>
+    
+    <!-- Tailwind CSS via CDN (will be replaced with compiled version in production) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49',
+                        },
+                        accent: {
+                            50: '#fdf4ff',
+                            100: '#fae8ff',
+                            200: '#f5d0fe',
+                            300: '#f0abfc',
+                            400: '#e879f9',
+                            500: '#d946ef',
+                            600: '#c026d3',
+                            700: '#a21caf',
+                            800: '#86198f',
+                            900: '#701a75',
+                            950: '#4a044e',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Nunito', 'system-ui', 'sans-serif'],
+                        display: ['Outfit', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Page transition */
+        .page-transition {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Card hover effect */
+        .card-hover {
+            transition: all 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="h-full bg-gradient-to-br from-slate-50 via-white to-primary-50 font-sans antialiased">
+    {% block body %}
+    {% if user.is_authenticated %}
+    <!-- Authenticated Layout -->
+    <div class="min-h-screen flex">
+        <!-- Sidebar -->
+        {% include 'components/sidebar.html' %}
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col min-h-screen lg:ml-64">
+            <!-- Top Navigation -->
+            {% include 'components/navbar.html' %}
+            
+            <!-- Page Content -->
+            <main class="flex-1 p-4 lg:p-8 page-transition">
+                <!-- Hidden Django Messages Container - will be converted to toasts -->
+                {% if messages %}
+                <div id="django-messages" class="hidden">
+                    {% for message in messages %}
+                    <div data-message="{{ message }}" data-type="{{ message.tags }}"></div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% block content %}{% endblock %}
+            </main>
+            
+            <!-- Footer -->
+            {% include 'components/footer.html' %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Non-authenticated Layout -->
+    <div class="min-h-screen flex flex-col">
+        <!-- Hidden Django Messages for login page - will be converted to toasts -->
+        {% if messages %}
+        <div id="django-messages" class="hidden">
+            {% for message in messages %}
+            <div data-message="{{ message }}" data-type="{{ message.tags }}"></div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <main class="flex-1 page-transition">
+            {% block content_unauthenticated %}{% endblock %}
+        </main>
+    </div>
+    {% endif %}
+    {% endblock body %}
+    
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] hidden items-center justify-center">
+        {% include 'components/spinner.html' %}
+    </div>
+    
+    <!-- JavaScript -->
+    <script>
+        // Toast notification function
+        function showToast(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const colors = {
+                success: 'bg-emerald-500',
+                error: 'bg-red-500',
+                warning: 'bg-amber-500',
+                info: 'bg-primary-500'
+            };
+            
+            toast.className = `${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg flex items-center space-x-3 transform translate-x-full transition-transform duration-300`;
+            toast.innerHTML = `
+                <span class="text-sm font-medium">${message}</span>
+                <button onclick="this.parentElement.remove()" class="ml-2 hover:opacity-75">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full');
+            });
+            
+            // Auto remove
+            if (duration > 0) {
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
+        }
+        
+        // Loading overlay functions
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+            document.getElementById('loading-overlay').classList.add('flex');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+            document.getElementById('loading-overlay').classList.remove('flex');
+        }
+        
+        // CSRF token for AJAX requests
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        const csrftoken = getCookie('csrftoken');
+        
+        // Convert Django messages to toasts on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Find Django message container and convert to toasts
+            const messageContainer = document.getElementById('django-messages');
+            if (messageContainer) {
+                const messages = messageContainer.querySelectorAll('[data-message]');
+                messages.forEach(msg => {
+                    const type = msg.dataset.type || 'info';
+                    const text = msg.dataset.message;
+                    if (text) {
+                        showToast(text, type, 5000);
+                    }
+                });
+                // Remove the hidden message container
+                messageContainer.remove();
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

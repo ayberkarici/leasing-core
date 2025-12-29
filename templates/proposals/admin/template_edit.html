@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if template %}Şablon Düzenle{% else %}Yeni Şablon{% endif %} - Leasing Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <a href="{% url 'proposals:template_management' %}" class="text-sm text-primary-600 hover:text-primary-700 mb-2 inline-block">
+            ← Şablon Yönetimine Dön
+        </a>
+        <h1 class="text-3xl font-display font-bold text-slate-800">
+            {% if template %}{{ template.name }}{% else %}Yeni Şablon Oluştur{% endif %}
+        </h1>
+        <p class="mt-2 text-slate-600">AI'ın teklif oluştururken kullanacağı bölümleri tanımlayın</p>
+    </div>
+    
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Basic Info -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h2 class="text-lg font-semibold text-slate-800 mb-4">Temel Bilgiler</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Şablon Adı</label>
+                    <input type="text" name="name" value="{{ template.name|default:'Varsayılan Şablon' }}" required
+                           class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Açıklama</label>
+                    <textarea name="description" rows="2"
+                              class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500">{{ template.description|default:'' }}</textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Varsayılan Geçerlilik Süresi (Gün)</label>
+                    <input type="number" name="default_valid_days" value="{{ template.default_valid_days|default:30 }}" min="1"
+                           class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                
+                <div class="flex items-center">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" name="is_active" {% if template.is_active or not template %}checked{% endif %}
+                               class="w-5 h-5 text-primary-600 rounded border-slate-300 focus:ring-primary-500">
+                        <span class="ml-3 text-slate-700">Aktif Şablon</span>
+                    </label>
+                    <span class="ml-2 text-xs text-slate-500">(Yeni tekliflerde kullanılır)</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Input Guide -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h2 class="text-lg font-semibold text-slate-800 mb-2">Kullanıcı Giriş Rehberi</h2>
+            <p class="text-sm text-slate-500 mb-4">Kullanıcılara teklif oluşturmak için ne yazmaları gerektiğini gösteren örnek metin</p>
+            
+            <textarea name="input_guide" rows="8"
+                      placeholder="Örnek: Teklif oluşturmak için ekipman türü, marka, model, adet ve tahmini değeri belirtin..."
+                      class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono text-sm">{{ template.input_guide|default:'' }}</textarea>
+        </div>
+        
+        <!-- Email Template -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <h2 class="text-lg font-semibold text-slate-800 mb-2">Email Şablonu</h2>
+            <p class="text-sm text-slate-500 mb-4">
+                Kullanılabilir değişkenler: 
+                <code class="px-1 py-0.5 bg-slate-100 rounded text-xs">{company_name}</code>,
+                <code class="px-1 py-0.5 bg-slate-100 rounded text-xs">{contact_person}</code>,
+                <code class="px-1 py-0.5 bg-slate-100 rounded text-xs">{equipment_description}</code>,
+                <code class="px-1 py-0.5 bg-slate-100 rounded text-xs">{monthly_payment}</code>
+            </p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Email Konusu</label>
+                    <input type="text" name="email_subject" value="{{ template.email_subject|default:'Leasing Teklifi - {company_name}' }}"
+                           class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Email İçeriği</label>
+                    <textarea name="email_body" rows="10"
+                              class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono text-sm">{{ template.email_body|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Template Sections -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-800">Teklif Bölümleri</h2>
+                    <p class="text-sm text-slate-500">AI'ın dolduracağı bölümleri tanımlayın</p>
+                </div>
+                <button type="button" onclick="addSection()"
+                        class="px-4 py-2 bg-primary-100 text-primary-700 rounded-xl hover:bg-primary-200 transition-colors text-sm font-medium">
+                    + Bölüm Ekle
+                </button>
+            </div>
+            
+            <div id="sections-container" class="space-y-4">
+                {% if template %}
+                    {% for section in template.sections.all %}
+                    <div class="section-item bg-slate-50 rounded-xl p-4 border border-slate-200" data-order="{{ section.order }}">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center space-x-3">
+                                <span class="cursor-move text-slate-400 hover:text-slate-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+                                    </svg>
+                                </span>
+                                <input type="hidden" name="section_ids[]" value="{{ section.id }}">
+                                <input type="hidden" name="section_orders[]" value="{{ section.order }}" class="section-order">
+                            </div>
+                            <button type="button" onclick="removeSection(this)" class="text-red-500 hover:text-red-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Bölüm Başlığı</label>
+                                <input type="text" name="section_titles[]" value="{{ section.title }}" required
+                                       class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Bölüm Tipi</label>
+                                <select name="section_types[]"
+                                        class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
+                                    {% for type_value, type_label in section_types %}
+                                    <option value="{{ type_value }}" {% if section.field_type == type_value %}selected{% endif %}>{{ type_label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-slate-500 mb-1">AI Talimatı</label>
+                                <textarea name="section_descriptions[]" rows="2"
+                                          placeholder="AI'a bu bölümü nasıl yazması gerektiğini açıklayın..."
+                                          class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">{{ section.description }}</textarea>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="section_ai_generated[]" value="{{ forloop.counter0 }}" {% if section.is_ai_generated %}checked{% endif %}
+                                           class="w-4 h-4 text-primary-600 rounded border-slate-300 focus:ring-primary-500">
+                                    <span class="ml-2 text-sm text-slate-700">AI tarafından oluşturulsun</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            
+            <!-- Empty State -->
+            <div id="sections-empty" class="{% if template.sections.exists %}hidden{% endif %} text-center py-8 text-slate-500">
+                <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                </svg>
+                <p>Henüz bölüm eklenmemiş</p>
+                <button type="button" onclick="addSection()" class="mt-2 text-primary-600 hover:text-primary-700 text-sm font-medium">
+                    + İlk bölümü ekle
+                </button>
+            </div>
+        </div>
+        
+        <!-- Submit -->
+        <div class="flex items-center justify-end space-x-4">
+            <a href="{% url 'proposals:template_management' %}" 
+               class="px-6 py-3 border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors">
+                İptal
+            </a>
+            <button type="submit" 
+                    class="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium">
+                Kaydet
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Section Template -->
+<template id="section-template">
+    <div class="section-item bg-slate-50 rounded-xl p-4 border border-slate-200" data-order="0">
+        <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center space-x-3">
+                <span class="cursor-move text-slate-400 hover:text-slate-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+                    </svg>
+                </span>
+                <input type="hidden" name="section_ids[]" value="">
+                <input type="hidden" name="section_orders[]" value="0" class="section-order">
+            </div>
+            <button type="button" onclick="removeSection(this)" class="text-red-500 hover:text-red-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Bölüm Başlığı</label>
+                <input type="text" name="section_titles[]" required
+                       class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-500 mb-1">Bölüm Tipi</label>
+                <select name="section_types[]"
+                        class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm">
+                    {% for type_value, type_label in section_types %}
+                    <option value="{{ type_value }}">{{ type_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-xs font-medium text-slate-500 mb-1">AI Talimatı</label>
+                <textarea name="section_descriptions[]" rows="2"
+                          placeholder="AI'a bu bölümü nasıl yazması gerektiğini açıklayın..."
+                          class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"></textarea>
+            </div>
+            <div class="md:col-span-2">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" name="section_ai_generated[]" value="__INDEX__" checked
+                           class="w-4 h-4 text-primary-600 rounded border-slate-300 focus:ring-primary-500 ai-checkbox">
+                    <span class="ml-2 text-sm text-slate-700">AI tarafından oluşturulsun</span>
+                </label>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+let sectionIndex = {{ template.sections.count|default:0 }};
+
+function addSection() {
+    const container = document.getElementById('sections-container');
+    const template = document.getElementById('section-template');
+    const clone = template.content.cloneNode(true);
+    
+    // Update checkbox value with current index
+    const checkbox = clone.querySelector('.ai-checkbox');
+    if (checkbox) {
+        checkbox.value = sectionIndex;
+    }
+    
+    // Update order
+    const orderInput = clone.querySelector('.section-order');
+    if (orderInput) {
+        orderInput.value = sectionIndex;
+    }
+    
+    container.appendChild(clone);
+    sectionIndex++;
+    
+    document.getElementById('sections-empty').classList.add('hidden');
+    updateSectionOrders();
+}
+
+function removeSection(button) {
+    const section = button.closest('.section-item');
+    section.remove();
+    
+    const container = document.getElementById('sections-container');
+    if (container.children.length === 0) {
+        document.getElementById('sections-empty').classList.remove('hidden');
+    }
+    updateSectionOrders();
+}
+
+function updateSectionOrders() {
+    const sections = document.querySelectorAll('.section-item');
+    sections.forEach((section, index) => {
+        section.querySelector('.section-order').value = index;
+        section.dataset.order = index;
+    });
+}
+
+// Simple drag and drop for reordering
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('sections-container');
+    
+    container.addEventListener('dragstart', function(e) {
+        if (e.target.classList.contains('section-item')) {
+            e.dataTransfer.setData('text/plain', e.target.dataset.order);
+            e.target.classList.add('opacity-50');
+        }
+    });
+    
+    container.addEventListener('dragend', function(e) {
+        if (e.target.classList.contains('section-item')) {
+            e.target.classList.remove('opacity-50');
+        }
+    });
+});
+</script>
+{% endblock %}

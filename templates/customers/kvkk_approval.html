@@ -1,0 +1,613 @@
+{% extends 'base.html' %}
+
+{% block title %}KVKK Onayı{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
+    <div class="max-w-3xl mx-auto px-4">
+        
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg mb-4">
+                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-slate-800">KVKK Onay Süreci</h1>
+            <p class="text-slate-600 mt-2">Sistemi kullanabilmek için KVKK onay sürecini tamamlamalısınız.</p>
+        </div>
+        
+        {% if kvkk_doc %}
+            <!-- Status Card -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
+                <div class="bg-gradient-to-r from-slate-700 to-slate-800 px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-semibold text-white flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            KVKK Belgesi Durumu
+                        </h2>
+                        <span class="px-3 py-1 rounded-full text-sm font-medium {{ kvkk_doc.status_display_class }}">
+                            {{ kvkk_doc.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <!-- Status-based Content -->
+                    
+                    {% if kvkk_doc.status == 'pending_signature' or kvkk_doc.status == 'revision_requested' %}
+                        <!-- Step 1: Download and Sign -->
+                        <div class="mb-6">
+                            {% if kvkk_doc.status == 'revision_requested' %}
+                            <div class="bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-300 rounded-xl p-5 mb-4">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mr-4">
+                                        <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-semibold text-orange-800">KVKK Metni Güncellendi</h3>
+                                        <p class="text-sm text-orange-700 mt-1">
+                                            Satış temsilciniz KVKK aydınlatma metninizi güncelledi. 
+                                            Lütfen yeni metni inceleyerek, imzalı belgenizi tekrar yükleyin.
+                                        </p>
+                                        {% if kvkk_doc.salesperson_notes %}
+                                        <div class="mt-3 p-3 bg-white/70 rounded-lg border border-orange-200">
+                                            <p class="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-1">Satışçı Notu:</p>
+                                            <p class="text-sm text-orange-900 italic">{{ kvkk_doc.salesperson_notes }}</p>
+                                        </div>
+                                        {% endif %}
+                                        <p class="text-xs text-orange-600 mt-3 flex items-center">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                            </svg>
+                                            Revizyon #{{ kvkk_doc.revision_count }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="flex items-start space-x-4 p-4 bg-blue-50 rounded-xl no-auto-hide" id="download-section">
+                                <div class="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span class="text-blue-600 font-bold">1</span>
+                                </div>
+                                <div class="flex-grow">
+                                    <h3 class="font-semibold text-slate-800">PDF'i İndirin</h3>
+                                    <p class="text-sm text-slate-600 mt-1">KVKK aydınlatma metnini PDF olarak indirin ve yetkiliye imzalatıp kaşeletın.</p>
+                                    <button type="button" 
+                                       id="download-pdf-btn"
+                                       data-url="{% url 'customers:kvkk_download' kvkk_doc.pk %}"
+                                       class="inline-flex items-center mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        <span id="download-btn-text">KVKK PDF İndir</span>
+                                    </button>
+                                    <p id="download-success" class="text-emerald-600 text-sm mt-2 hidden">
+                                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        PDF başarıyla indirildi!
+                                    </p>
+                                    <p id="download-error" class="text-red-500 text-sm mt-2 hidden"></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 2: Upload signed document -->
+                        <div class="mb-6">
+                            <div class="flex items-start space-x-4 p-4 bg-emerald-50 rounded-xl no-auto-hide">
+                                <div class="flex-shrink-0 w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                                    <span class="text-emerald-600 font-bold">2</span>
+                                </div>
+                                <div class="flex-grow">
+                                    <h3 class="font-semibold text-slate-800">İmzalı Belgeyi Yükleyin</h3>
+                                    <p class="text-sm text-slate-600 mt-1">İmzalanmış ve kaşelenmiş belgeyi taratıp sisteme yükleyin.</p>
+                                    
+                                    <form method="post" enctype="multipart/form-data" class="mt-4" id="upload-form">
+                                        {% csrf_token %}
+                                        
+                                        <!-- Drag & Drop Area -->
+                                        <div id="drop-zone" 
+                                             class="border-2 border-dashed border-emerald-300 rounded-xl p-6 text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/50 transition-all">
+                                            <div id="drop-zone-content">
+                                                <svg class="w-12 h-12 mx-auto text-emerald-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                                </svg>
+                                                <p class="text-sm font-medium text-slate-700">Dosyayı buraya sürükleyin</p>
+                                                <p class="text-xs text-slate-500 mt-1">veya</p>
+                                                <label class="inline-block mt-2 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors cursor-pointer text-sm font-medium">
+                                                    Dosya Seçin
+                                                    <input type="file" 
+                                                           name="signed_document" 
+                                                           id="file-input"
+                                                           accept=".pdf,.jpg,.jpeg,.png"
+                                                           required
+                                                           class="hidden">
+                                                </label>
+                                                <p class="text-xs text-slate-400 mt-3">PDF, JPG, PNG (Max 10MB)</p>
+                                            </div>
+                                            
+                                            <!-- File Selected State -->
+                                            <div id="file-selected" class="hidden">
+                                                <svg class="w-12 h-12 mx-auto text-emerald-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                </svg>
+                                                <p class="text-sm font-medium text-emerald-700" id="selected-file-name">dosya.pdf</p>
+                                                <p class="text-xs text-slate-500 mt-1" id="selected-file-size">0 KB</p>
+                                                <button type="button" id="remove-file" class="mt-2 text-xs text-red-500 hover:text-red-700">
+                                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                    </svg>
+                                                    Dosyayı Kaldır
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <button type="submit" 
+                                                id="upload-btn"
+                                                disabled
+                                                class="w-full mt-4 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                            </svg>
+                                            <span id="upload-btn-text">İmzalı Belgeyi Yükle</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Step 3: Request revision if needed -->
+                        <div class="mb-6">
+                            <div class="flex items-start space-x-4 p-4 bg-amber-50 rounded-xl no-auto-hide">
+                                <div class="flex-shrink-0 w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-grow">
+                                    <h3 class="font-semibold text-slate-800">Düzeltme veya Soru?</h3>
+                                    <p class="text-sm text-slate-600 mt-1">KVKK metninde düzeltme istiyorsanız veya sorunuz varsa satışçınıza not bırakabilirsiniz.</p>
+                                    
+                                    <button type="button" 
+                                            id="toggle-revision-form"
+                                            class="inline-flex items-center mt-3 px-4 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition-colors text-sm">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                        Not/Düzeltme İsteği Gönder
+                                    </button>
+                                    
+                                    <div id="revision-form" class="hidden mt-4">
+                                        <form method="post" action="{% url 'customers:kvkk_customer_note' kvkk_doc.pk %}">
+                                            {% csrf_token %}
+                                            <textarea name="customer_note" 
+                                                      rows="3" 
+                                                      placeholder="Düzeltme isteğinizi veya sorunuzu yazın..."
+                                                      required
+                                                      class="w-full px-3 py-2 border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"></textarea>
+                                            <div class="flex justify-end mt-2 space-x-2">
+                                                <button type="button" 
+                                                        id="cancel-revision"
+                                                        class="px-3 py-1.5 text-slate-600 hover:text-slate-800 text-sm">
+                                                    İptal
+                                                </button>
+                                                <button type="submit" 
+                                                        class="px-4 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm">
+                                                    Gönder
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    
+                    {% elif kvkk_doc.status == 'pending_approval' %}
+                        <!-- Step 2: Waiting for Approval -->
+                        <div class="text-center py-8">
+                            <div class="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
+                                <svg class="w-8 h-8 text-amber-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-semibold text-slate-800 mb-2">Onay Bekleniyor</h3>
+                            <p class="text-slate-600 mb-4">
+                                İmzalı belgeniz satışçınız tarafından inceleniyor.<br>
+                                Onaylandığında sisteme erişim sağlayabileceksiniz.
+                            </p>
+                            
+                            <div class="bg-slate-50 rounded-xl p-4 inline-block">
+                                <p class="text-sm text-slate-500">
+                                    Yükleme Tarihi: <strong>{{ kvkk_doc.uploaded_at|date:"d.m.Y H:i" }}</strong>
+                                </p>
+                            </div>
+                            
+                            {% if kvkk_doc.signed_document %}
+                            <div class="mt-4">
+                                <a href="{{ kvkk_doc.signed_document.url }}" target="_blank"
+                                   class="text-blue-600 hover:text-blue-700 text-sm">
+                                    <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                    Yüklenen belgeyi görüntüle
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    
+                    {% elif kvkk_doc.status == 'approved' %}
+                        <!-- Approved - Show success and document -->
+                        <div class="text-center py-8">
+                            <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
+                                <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-semibold text-emerald-800 mb-2">KVKK Onaylandı!</h3>
+                            <p class="text-slate-600 mb-4">Artık sistemi kullanabilirsiniz.</p>
+                            
+                            {% if kvkk_doc.signed_document %}
+                            <div class="bg-emerald-50 rounded-xl p-4 mb-6 border border-emerald-200 max-w-sm mx-auto">
+                                <div class="flex items-center justify-center gap-3">
+                                    <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="text-left">
+                                        <p class="text-sm font-medium text-emerald-800">İmzalı KVKK Belgeniz</p>
+                                        <a href="{{ kvkk_doc.signed_document.url }}" target="_blank"
+                                           class="text-sm text-emerald-600 hover:text-emerald-700 flex items-center">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            </svg>
+                                            Belgeyi İndir/Görüntüle
+                                        </a>
+                                    </div>
+                                </div>
+                                {% if kvkk_doc.approved_at %}
+                                <p class="text-xs text-emerald-600 mt-2">
+                                    Onay Tarihi: {{ kvkk_doc.approved_at|date:"d.m.Y H:i" }}
+                                </p>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <a href="{% url 'customer_dashboard' %}" 
+                               class="inline-flex items-center px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors">
+                                Dashboard'a Git
+                                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                </svg>
+                            </a>
+                        </div>
+                    
+                    {% else %}
+                        <!-- Draft or unknown status -->
+                        <div class="text-center py-8">
+                            <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-full mb-4">
+                                <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-xl font-semibold text-slate-800 mb-2">KVKK Hazırlanıyor</h3>
+                            <p class="text-slate-600">
+                                Satışçınız KVKK belgenizi hazırlıyor.<br>
+                                Hazır olduğunda size bildirilecektir.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+        {% else %}
+            <!-- No KVKK Document Yet -->
+            <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-100 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-slate-800 mb-2">KVKK Belgesi Bekleniyor</h3>
+                <p class="text-slate-600 mb-4">
+                    Satışçınız sizin için KVKK belgesini hazırlayacaktır.<br>
+                    Lütfen bekleyin veya satışçınızla iletişime geçin.
+                </p>
+                
+                {% if customer and customer.salesperson %}
+                <div class="bg-slate-50 rounded-xl p-4 inline-block">
+                    <p class="text-sm text-slate-600">
+                        <strong>Satışçınız:</strong> {{ customer.salesperson.full_name }}<br>
+                        {% if customer.salesperson.email %}
+                        <a href="mailto:{{ customer.salesperson.email }}" class="text-blue-600 hover:text-blue-700">
+                            {{ customer.salesperson.email }}
+                        </a>
+                        {% endif %}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        <!-- Help Section -->
+        <div class="mt-6 text-center text-sm text-slate-500">
+            <p>
+                Sorularınız için satışçınızla veya 
+                <a href="mailto:destek@leasingsistemi.com" class="text-blue-600 hover:text-blue-700">destek@leasingsistemi.com</a>
+                ile iletişime geçebilirsiniz.
+            </p>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const downloadBtn = document.getElementById('download-pdf-btn');
+    if (!downloadBtn) return;
+    
+    downloadBtn.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const url = this.dataset.url;
+        const btnText = document.getElementById('download-btn-text');
+        const errorEl = document.getElementById('download-error');
+        const originalText = btnText.textContent;
+        
+        // Hide previous errors
+        errorEl.classList.add('hidden');
+        
+        // Show loading state
+        btnText.textContent = 'İndiriliyor...';
+        downloadBtn.disabled = true;
+        downloadBtn.classList.add('opacity-75', 'cursor-not-allowed');
+        
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+            
+            if (!response.ok) {
+                // Check if it's a redirect (which means an error occurred)
+                if (response.redirected) {
+                    throw new Error('PDF oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Check content type
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/pdf')) {
+                throw new Error('PDF oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.');
+            }
+            
+            // Get filename from Content-Disposition header
+            const contentDisposition = response.headers.get('content-disposition');
+            let filename = 'KVKK_Belgesi.pdf';
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (filenameMatch && filenameMatch[1]) {
+                    filename = filenameMatch[1].replace(/['"]/g, '');
+                }
+            }
+            
+            // Create blob and download
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = downloadUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(downloadUrl);
+            document.body.removeChild(a);
+            
+            // Reset button
+            btnText.textContent = originalText;
+            downloadBtn.disabled = false;
+            downloadBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            
+            // Show success message
+            const successEl = document.getElementById('download-success');
+            if (successEl) {
+                successEl.classList.remove('hidden');
+                setTimeout(() => successEl.classList.add('hidden'), 5000);
+            }
+            
+        } catch (error) {
+            console.error('Download error:', error);
+            
+            // Show error
+            errorEl.textContent = error.message || 'PDF indirilemedi. Lütfen tekrar deneyin.';
+            errorEl.classList.remove('hidden');
+            
+            // Reset button
+            btnText.textContent = originalText;
+            downloadBtn.disabled = false;
+            downloadBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+        }
+    });
+    
+    // Revision form toggle
+    const toggleRevisionBtn = document.getElementById('toggle-revision-form');
+    const revisionForm = document.getElementById('revision-form');
+    const cancelRevisionBtn = document.getElementById('cancel-revision');
+    
+    if (toggleRevisionBtn && revisionForm) {
+        toggleRevisionBtn.addEventListener('click', function() {
+            revisionForm.classList.toggle('hidden');
+            if (!revisionForm.classList.contains('hidden')) {
+                revisionForm.querySelector('textarea').focus();
+            }
+        });
+    }
+    
+    if (cancelRevisionBtn && revisionForm) {
+        cancelRevisionBtn.addEventListener('click', function() {
+            revisionForm.classList.add('hidden');
+            revisionForm.querySelector('textarea').value = '';
+        });
+    }
+    
+    // Drag & Drop functionality
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const dropZoneContent = document.getElementById('drop-zone-content');
+    const fileSelected = document.getElementById('file-selected');
+    const selectedFileName = document.getElementById('selected-file-name');
+    const selectedFileSize = document.getElementById('selected-file-size');
+    const removeFileBtn = document.getElementById('remove-file');
+    const uploadBtn = document.getElementById('upload-btn');
+    const uploadForm = document.getElementById('upload-form');
+    
+    if (dropZone && fileInput) {
+        // Allowed file types
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Validate file
+        function validateFile(file) {
+            if (!allowedTypes.includes(file.type)) {
+                alert('Geçersiz dosya türü. Lütfen PDF, JPG veya PNG dosyası seçin.');
+                return false;
+            }
+            if (file.size > maxSize) {
+                alert('Dosya boyutu çok büyük. Maksimum 10MB yüklenebilir.');
+                return false;
+            }
+            return true;
+        }
+        
+        // Show selected file
+        function showSelectedFile(file) {
+            selectedFileName.textContent = file.name;
+            selectedFileSize.textContent = formatFileSize(file.size);
+            dropZoneContent.classList.add('hidden');
+            fileSelected.classList.remove('hidden');
+            uploadBtn.disabled = false;
+            dropZone.classList.remove('border-emerald-300');
+            dropZone.classList.add('border-emerald-500', 'bg-emerald-50/50');
+        }
+        
+        // Reset drop zone
+        function resetDropZone() {
+            fileInput.value = '';
+            dropZoneContent.classList.remove('hidden');
+            fileSelected.classList.add('hidden');
+            uploadBtn.disabled = true;
+            dropZone.classList.add('border-emerald-300');
+            dropZone.classList.remove('border-emerald-500', 'bg-emerald-50/50');
+        }
+        
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        // Highlight drop zone when dragging over
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight(e) {
+            dropZone.classList.add('border-emerald-500', 'bg-emerald-100/50', 'scale-[1.02]');
+        }
+        
+        function unhighlight(e) {
+            dropZone.classList.remove('border-emerald-500', 'bg-emerald-100/50', 'scale-[1.02]');
+        }
+        
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                const file = files[0];
+                if (validateFile(file)) {
+                    // Create a new DataTransfer to set the file
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+                    showSelectedFile(file);
+                }
+            }
+        }
+        
+        // Handle file input change
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                if (validateFile(file)) {
+                    showSelectedFile(file);
+                } else {
+                    resetDropZone();
+                }
+            }
+        });
+        
+        // Handle remove file button
+        if (removeFileBtn) {
+            removeFileBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                resetDropZone();
+            });
+        }
+        
+        // Handle click on drop zone
+        dropZone.addEventListener('click', function(e) {
+            if (e.target === dropZone || dropZoneContent.contains(e.target)) {
+                fileInput.click();
+            }
+        });
+        
+        // Handle form submit
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function(e) {
+                if (!fileInput.files.length) {
+                    e.preventDefault();
+                    alert('Lütfen bir dosya seçin.');
+                    return;
+                }
+                
+                // Show loading state
+                uploadBtn.disabled = true;
+                document.getElementById('upload-btn-text').textContent = 'Yükleniyor...';
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

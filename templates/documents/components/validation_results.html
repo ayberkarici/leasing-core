@@ -1,0 +1,143 @@
+{% comment %}
+Document Validation Results Component
+Usage: {% include 'documents/components/validation_results.html' with validation=validation_data %}
+{% endcomment %}
+
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <!-- Header -->
+    <div class="p-6 border-b border-slate-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-slate-800">Belge Validasyon Sonuçları</h3>
+                <p class="text-sm text-slate-500 mt-1">AI tarafından analiz edildi</p>
+            </div>
+            <div class="text-right">
+                {% if validation.is_valid %}
+                <span class="inline-flex items-center px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Geçerli
+                </span>
+                {% else %}
+                <span class="inline-flex items-center px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    İnceleme Gerekli
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Overall Score -->
+    <div class="p-6 bg-slate-50">
+        <div class="flex items-center">
+            <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-slate-600">Tamamlanma Oranı</span>
+                    <span class="text-sm font-bold text-slate-800">%{{ validation.overall_score|default:0|floatformat:0 }}</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2.5">
+                    {% if validation.overall_score >= 80 %}
+                    <div class="bg-emerald-500 h-2.5 rounded-full" style="width: {{ validation.overall_score }}%"></div>
+                    {% elif validation.overall_score >= 50 %}
+                    <div class="bg-amber-500 h-2.5 rounded-full" style="width: {{ validation.overall_score }}%"></div>
+                    {% else %}
+                    <div class="bg-red-500 h-2.5 rounded-full" style="width: {{ validation.overall_score }}%"></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Field Checklist -->
+    {% if validation.fields %}
+    <div class="p-6">
+        <h4 class="text-sm font-semibold text-slate-700 mb-4">Alan Kontrolü</h4>
+        <div class="space-y-3">
+            {% for field in validation.fields %}
+            <div class="flex items-center justify-between p-3 rounded-lg {% if field.found %}bg-emerald-50{% else %}bg-red-50{% endif %}">
+                <div class="flex items-center">
+                    {% if field.found %}
+                    <svg class="w-5 h-5 text-emerald-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {% else %}
+                    <svg class="w-5 h-5 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    {% endif %}
+                    <div>
+                        <p class="text-sm font-medium {% if field.found %}text-emerald-800{% else %}text-red-800{% endif %}">
+                            {{ field.field_id|default:"Alan" }}
+                        </p>
+                        {% if field.value %}
+                        <p class="text-xs text-slate-500">{{ field.value|truncatechars:50 }}</p>
+                        {% endif %}
+                        {% if field.issue %}
+                        <p class="text-xs text-red-600 mt-1">{{ field.issue }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs font-medium {% if field.confidence >= 80 %}text-emerald-600{% elif field.confidence >= 50 %}text-amber-600{% else %}text-red-600{% endif %}">
+                        %{{ field.confidence|default:0 }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Warnings -->
+    {% if validation.warnings %}
+    <div class="px-6 pb-4">
+        <h4 class="text-sm font-semibold text-amber-700 mb-3">Uyarılar</h4>
+        <div class="space-y-2">
+            {% for warning in validation.warnings %}
+            <div class="flex items-start p-3 bg-amber-50 rounded-lg">
+                <svg class="w-5 h-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <p class="text-sm text-amber-700">{{ warning }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Errors -->
+    {% if validation.errors %}
+    <div class="px-6 pb-4">
+        <h4 class="text-sm font-semibold text-red-700 mb-3">Hatalar</h4>
+        <div class="space-y-2">
+            {% for error in validation.errors %}
+            <div class="flex items-start p-3 bg-red-50 rounded-lg">
+                <svg class="w-5 h-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm text-red-700">{{ error }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Recommendations -->
+    {% if validation.recommendations %}
+    <div class="px-6 pb-6">
+        <h4 class="text-sm font-semibold text-slate-700 mb-3">Öneriler</h4>
+        <ul class="list-disc list-inside space-y-1 text-sm text-slate-600">
+            {% for rec in validation.recommendations %}
+            <li>{{ rec }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+
+

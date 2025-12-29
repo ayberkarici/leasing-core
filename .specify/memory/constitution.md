@@ -1,50 +1,142 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Leasing Yönetim Sistemi - Proje Anayasası
 
-## Core Principles
+## Proje Vizyonu
+Leasing şirketlerinin iç süreçlerini otomatikleştiren, AI destekli, departmanlar arası iş akışını kolaylaştıran ve belge yönetimini akıllı hale getiren bir Django web uygulaması.
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+## Temel Prensipler
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### 1. Kullanıcı Deneyimi
+- **Basitlik**: Teknik olmayan kullanıcılar için sezgisel arayüzler
+- **Türkçe Öncelik**: Tüm UI, mesajlar ve dokümantasyon Türkçe
+- **Mobil Uyumluluk**: Tüm özellikler mobil cihazlarda çalışmalı
+- **Gerçek Zamanlı Feedback**: Her işlem anında geri bildirim vermeli
+- **Minimum Tık**: Kullanıcı hedefine minimum adımda ulaşmalı
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### 2. AI Entegrasyonu
+- **Şeffaflık**: AI kararları açıklanabilir olmalı
+- **Yedek Plan**: AI başarısız olursa manuel süreç devam edebilmeli
+- **Doğruluk**: AI validasyonları %95+ doğruluk hedeflemeli
+- **Performans**: AI yanıtları 5 saniye içinde dönmeli
+- **Maliyet Bilinci**: API çağrıları optimize edilmeli, gereksiz çağrı yapılmamalı
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### 3. Güvenlik ve Gizlilik
+- **KVKK Uyumu**: Tüm veri işleme KVKK'ya uygun
+- **Rol Tabanlı Erişim**: Kullanıcı sadece yetkili olduğu verileri görmeli
+- **Veri Şifreleme**: Hassas veriler şifreli saklanmalı
+- **Audit Trail**: Her kritik işlem loglanmalı
+- **Müşteri İzolasyonu**: Müşteriler birbirlerinin verilerini görmemeli
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### 4. Kod Kalitesi
+- **Django Best Practices**: Framework standartlarına uyum
+- **DRY Prensibi**: Kod tekrarı minimize edilmeli
+- **Modülerlik**: Her modül bağımsız çalışabilir olmalı
+- **Test Edilebilirlik**: Unit test yazılabilir kod yapısı
+- **Dokümantasyon**: Her fonksiyon ve sınıf belgelendirilmeli
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### 5. Performans
+- **Hız**: Sayfalar 2 saniyede yüklenmeli
+- **Ölçeklenebilirlik**: 1000+ kullanıcıyı desteklemeli
+- **Veritabanı Optimizasyonu**: N+1 sorguları önlenmeli
+- **Caching**: Uygun yerlerde cache kullanılmalı
+- **Asenkron İşlemler**: Ağır işlemler arka planda çalışmalı
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### 6. Bakım ve Geliştirme
+- **Versiyon Kontrolü**: Git ile düzenli commit'ler
+- **Migration Yönetimi**: Database değişiklikleri migration ile
+- **Logging**: Hata ayıklama için kapsamlı loglama
+- **Konfigürasyon**: Environment variable'lar ile esnek yapılandırma
+- **Deployment**: Kolay ve güvenli deployment süreci
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Teknoloji Kararları
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### Tercih Edilen Yaklaşımlar
+- **Backend**: Django 5.x (Python 3.11+)
+- **Database**: SQLite (development), PostgreSQL'e kolay geçiş
+- **Frontend**: Django Templates + Tailwind CSS (veya Bootstrap)
+- **AI**: Anthropic Claude API (Sonnet 4)
+- **File Processing**: PyPDF2, Pillow, python-docx
+- **Email**: Django email backend
+- **Forms**: Django Forms + Crispy Forms
 
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+### Kaçınılması Gerekenler
+- ❌ Karmaşık frontend framework'leri (React, Vue - gerekli değil)
+- ❌ Mikroservis mimarisi (over-engineering)
+- ❌ NoSQL veritabanı (ilişkisel veri yapısı ideal)
+- ❌ WebSocket (real-time requirement yok)
+- ❌ Gereksiz third-party paketler
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+## Başarı Metrikleri
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+### Teknik Metrikler
+- Test coverage: >80%
+- API response time: <2s (average)
+- AI validation accuracy: >95%
+- Bug rate: <5 per sprint
+- Code review approval rate: >90%
+
+### Kullanıcı Metrikleri
+- Onboarding completion rate: >90%
+- Task completion time: -50% (compared to manual)
+- User satisfaction score: >4.5/5
+- Error recovery rate: >95%
+- Mobile usage rate: >40%
+
+## Takım Yapısı ve Sorumluluklar
+
+### Roller
+- **Lead Developer**: Mimari kararlar, AI entegrasyonu
+- **Backend Developer**: Django modelleri, business logic
+- **Frontend Developer**: Templates, UI/UX
+- **QA**: Test yazma, manuel testing
+- **Product Owner**: Önceliklendirme, kullanıcı feedback
+
+### İletişim
+- Daily standup: Kısa günclemeler
+- Weekly review: İlerleme değerlendirmesi
+- Sprint planning: 2 haftalık sprint'ler
+- Documentation: README ve Wiki güncel
+
+## Kısıtlamalar ve Varsayımlar
+
+### Kısıtlamalar
+- İlk aşamada tek şirket kullanımı (multi-tenant değil)
+- SQLite ile başlanacak (küçük ölçek)
+- Sadece web arayüzü (mobile app yok)
+- Türkçe dil desteği (internationalization yok)
+
+### Varsayımlar
+- Kullanıcılar temel bilgisayar kullanımını biliyor
+- İnternet bağlantısı sürekli mevcut
+- Anthropic API kullanılabilir (uptime yüksek)
+- Dosya boyutları <10MB
+- Eş zamanlı kullanıcı sayısı <100
+
+## Risk Yönetimi
+
+### Potansiyel Riskler
+1. **AI API Kesintisi**: Fallback olarak manuel süreç aktif
+2. **Veri Kaybı**: Günlük otomatik backup
+3. **Performans Sorunları**: Erken profiling ve optimizasyon
+4. **Güvenlik Açıkları**: Düzenli security audit
+5. **Scope Creep**: Sprint planning ile sıkı kontrol
+
+### Azaltma Stratejileri
+- Düzenli backup rutini
+- Comprehensive error handling
+- Load testing yapılacak
+- Security best practices uygulanacak
+- Feature freeze dönemleri belirlenecek
+
+## Değerlendirme ve İyileştirme
+
+### Review Döngüsü
+- Her sprint sonunda retrospective
+- Aylık kullanıcı feedback toplama
+- Quarterly mimari review
+- AI model performans değerlendirmesi
+
+### İyileştirme Kriterleri
+- Kullanıcı şikayetleri >5: Immediate action
+- Performance degradation >20%: Investigation
+- Security vulnerability: Emergency patch
+- AI accuracy <90%: Model tuning veya prompt revision

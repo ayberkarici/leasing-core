@@ -1,0 +1,335 @@
+{% extends 'base.html' %}
+
+{% block title %}Satış Paneli - Leasing Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-display font-bold text-slate-800">
+            Hoş Geldiniz, {{ user.first_name|default:user.username }}!
+        </h1>
+        <p class="mt-2 text-slate-600">Bugünün öncelikleri ve müşteri durumları</p>
+    </div>
+    
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- My Customers -->
+        <a href="{% url 'customers:customer_list' %}" class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 card-hover block">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Müşterilerim</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1">{{ customer_stats.total_customers|default:0 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-emerald-600 font-medium">+{{ customer_stats.new_this_month|default:0 }}</span>
+                <span class="text-slate-500 ml-2">bu ay yeni</span>
+            </div>
+        </a>
+        
+        <!-- Pending Tasks -->
+        <a href="{% url 'tasks:task_list' %}?status=pending" class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 card-hover block">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Bekleyen Görevler</p>
+                    <p class="text-3xl font-bold text-amber-600 mt-1">{{ task_stats.pending|default:0 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                </div>
+            </div>
+            {% if task_stats.overdue > 0 %}
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-red-600 font-medium">{{ task_stats.overdue }} gecikmiş</span>
+            </div>
+            {% endif %}
+        </a>
+        
+        <!-- High Priority -->
+        <a href="{% url 'tasks:task_list' %}" class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 card-hover block">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Yüksek Öncelikli</p>
+                    <p class="text-3xl font-bold text-red-600 mt-1">{{ task_stats.high_priority|default:0 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-slate-500">AI skoru 60+</span>
+            </div>
+        </a>
+        
+        <!-- Due Today -->
+        <a href="{% url 'tasks:task_list' %}" class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 card-hover block">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Bugün Son Tarihli</p>
+                    <p class="text-3xl font-bold text-slate-800 mt-1">{{ task_stats.due_today|default:0 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Pending Actions - All Important Items -->
+        <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center mr-3">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-800">Bekleyen İşlemler</h2>
+                        <p class="text-xs text-slate-500">Öncelik sırasına göre</p>
+                    </div>
+                </div>
+                <a href="{% url 'tasks:task_list' %}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                    Tümünü Gör →
+                </a>
+            </div>
+            
+            {% if pending_actions %}
+            <div class="space-y-3">
+                {% for action in pending_actions %}
+                <div class="flex items-start p-4 rounded-xl border hover:shadow-md transition-shadow
+                    {% if action.type == 'kvkk' %}bg-purple-50 border-purple-200
+                    {% elif action.type == 'customer_request' %}bg-amber-50 border-amber-200
+                    {% elif action.priority >= 80 %}bg-red-50 border-red-200
+                    {% elif action.priority >= 60 %}bg-amber-50 border-amber-200
+                    {% else %}bg-slate-50 border-slate-200{% endif %}">
+                    
+                    <!-- Priority Score / Icon -->
+                    <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-white shadow-sm flex items-center justify-center mr-4">
+                        {% if action.type == 'kvkk' %}
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        {% elif action.type == 'customer_request' %}
+                        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                        </svg>
+                        {% else %}
+                        <span class="text-lg font-bold {% if action.priority >= 80 %}text-red-600{% elif action.priority >= 60 %}text-amber-600{% else %}text-slate-600{% endif %}">
+                            {{ action.priority }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Action Info -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <a href="{{ action.url }}" class="font-medium text-slate-800 hover:text-primary-600 truncate">
+                                {{ action.title }}
+                            </a>
+                            <span class="ml-2 px-2 py-1 text-xs rounded-full 
+                                {% if action.type == 'kvkk' %}{{ action.status_class }}
+                                {% elif action.type == 'customer_request' %}bg-amber-100 text-amber-700
+                                {% else %}{{ action.status_class }}{% endif %}">
+                                {% if action.type == 'kvkk' %}{{ action.status_display }}
+                                {% elif action.type == 'customer_request' %}Müşteri İsteği
+                                {% else %}{{ action.status_display }}{% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="mt-1 flex items-center text-sm text-slate-500">
+                            {% if action.customer %}
+                            <span class="truncate">{{ action.customer.company_name }}</span>
+                            <span class="mx-2">•</span>
+                            {% endif %}
+                            <span>{{ action.description|truncatewords:10 }}</span>
+                            {% if action.due_date %}
+                            <span class="mx-2">•</span>
+                            <span class="{% if action.is_overdue %}text-red-600 font-medium{% endif %}">
+                                {% if action.is_overdue %}Gecikmiş{% else %}{{ action.due_date|date:"d M" }}{% endif %}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="flex-shrink-0 ml-4 flex items-center space-x-2">
+                        {% if action.type == 'task' and action.task_obj %}
+                        <button onclick="markTaskComplete({{ action.task_obj.pk }})" 
+                                class="p-2 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                                title="Tamamlandı">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </button>
+                        {% endif %}
+                        <a href="{{ action.url }}" 
+                           class="p-2 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                           title="Detaylar">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12 text-slate-500">
+                <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p class="text-sm">Tüm işlemler tamamlandı! 🎉</p>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Right Column -->
+        <div class="space-y-6">
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-lg font-semibold text-slate-800 mb-4">Hızlı İşlemler</h2>
+                
+                <div class="space-y-3">
+                    <a href="{% url 'customers:customer_create' %}" class="w-full flex items-center px-4 py-3 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                        </svg>
+                        <span class="font-medium">Yeni Müşteri Ekle</span>
+                    </a>
+                    
+                    <a href="{% url 'tasks:task_create' %}" class="w-full flex items-center px-4 py-3 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        <span class="font-medium">Yeni Görev Oluştur</span>
+                    </a>
+                    
+                    <a href="{% url 'tasks:task_list' %}" class="w-full flex items-center px-4 py-3 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        </svg>
+                        <span class="font-medium">Tüm Görevler</span>
+                    </a>
+                    
+                    <a href="{% url 'customers:customer_list' %}" class="w-full flex items-center px-4 py-3 rounded-xl bg-slate-50 text-slate-700 hover:bg-slate-100 transition-colors">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <span class="font-medium">Müşteri Listesi</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Customer Stage Summary -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-lg font-semibold text-slate-800 mb-4">Müşteri Aşamaları</h2>
+                
+                {% if stage_summary.stages %}
+                <div class="space-y-3">
+                    {% for stage_key, stage_data in stage_summary.stages.items %}
+                    {% if stage_data.count > 0 %}
+                    <a href="{% url 'customers:customer_list' %}?stage={{ stage_key }}" class="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                        <span class="text-sm text-slate-600">{{ stage_data.label }}</span>
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700">{{ stage_data.count }}</span>
+                    </a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-slate-500 text-center py-4">Henüz müşteri yok</p>
+                {% endif %}
+            </div>
+            
+            <!-- Followup Required -->
+            {% if followup_customers %}
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-lg font-semibold text-slate-800 mb-4">Takip Gerekli</h2>
+                
+                <div class="space-y-3">
+                    {% for customer in followup_customers %}
+                    <a href="{% url 'customers:customer_detail' customer.pk %}" class="flex items-center p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-accent-400 flex items-center justify-center text-white font-medium text-sm mr-3">
+                            {{ customer.company_name|slice:":2"|upper }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-slate-800 truncate">{{ customer.company_name }}</p>
+                            <p class="text-xs text-slate-500">{{ customer.next_followup_date|date:"d M" }}</p>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Overdue Tasks Alert -->
+    {% if overdue_tasks %}
+    <div class="mt-6 bg-red-50 border border-red-200 rounded-2xl p-6">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="ml-4 flex-1">
+                <h3 class="text-lg font-medium text-red-800">Gecikmiş Görevler</h3>
+                <div class="mt-2 space-y-2">
+                    {% for task in overdue_tasks %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-red-700">{{ task.title }}</span>
+                        <a href="{% url 'tasks:task_detail' task.pk %}" class="text-sm font-medium text-red-600 hover:text-red-700">
+                            Görüntüle →
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script>
+function markTaskComplete(taskId) {
+    fetch(`/tasks/${taskId}/complete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Görev tamamlandı!', 'success');
+            // Reload page to update the list
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Bir hata oluştu', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Bir hata oluştu', 'error');
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Email Gönder - {{ proposal.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <a href="{% url 'proposals:detail' proposal.pk %}" class="text-sm text-primary-600 hover:text-primary-700 mb-2 inline-block">
+            ← Teklife Dön
+        </a>
+        <h1 class="text-3xl font-display font-bold text-slate-800">Email Gönder</h1>
+        <p class="mt-2 text-slate-600">{{ proposal.title }}</p>
+    </div>
+    
+    <!-- AI Badge -->
+    <div class="bg-gradient-to-r from-accent-50 to-accent-100 rounded-2xl p-4 mb-6 border border-accent-200">
+        <div class="flex items-center">
+            <svg class="w-5 h-5 text-accent-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <span class="text-accent-700 font-medium">AI tarafından oluşturulan email içeriği</span>
+        </div>
+    </div>
+    
+    <!-- Email Form -->
+    <form method="post" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        {% csrf_token %}
+        
+        <div class="p-6 space-y-6">
+            <!-- Recipient -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Alıcı Email</label>
+                <input type="email" name="recipient_email" value="{{ recipient_email }}" required
+                       class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            
+            <!-- Subject -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Konu</label>
+                <input type="text" name="subject" value="{{ email_subject }}" required
+                       class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            </div>
+            
+            <!-- Body -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Email İçeriği</label>
+                <textarea name="body" rows="12" required
+                          class="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none font-mono text-sm">{{ email_body }}</textarea>
+                <p class="mt-2 text-xs text-slate-500">
+                    İçeriği ihtiyacınıza göre düzenleyebilirsiniz.
+                </p>
+            </div>
+            
+            <!-- PDF Attachment Info -->
+            <div class="p-4 bg-slate-50 rounded-xl">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-slate-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                    </svg>
+                    <div>
+                        <p class="text-sm font-medium text-slate-700">Teklif PDF'i</p>
+                        <p class="text-xs text-slate-500">PDF dosyası email ile birlikte gönderilecek</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <a href="{% url 'proposals:detail' proposal.pk %}" 
+               class="text-slate-600 hover:text-slate-800 font-medium">
+                İptal
+            </a>
+            <button type="submit" 
+                    class="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium inline-flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                Email Gönder
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+
+
