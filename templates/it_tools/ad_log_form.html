@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Analiz Düzenle{% else %}Yeni AD Log Analizi{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="max-w-2xl mx-auto">
+        <!-- Başlık -->
+        <div class="mb-6">
+            <a href="{% url 'it_tools:ad_log_list' %}" class="text-indigo-600 hover:text-indigo-800 text-sm flex items-center mb-2">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Analiz Listesine Dön
+            </a>
+            <h1 class="text-2xl font-bold text-gray-800">{% if object %}Analiz Düzenle{% else %}Yeni AD Log Analizi{% endif %}</h1>
+            <p class="text-gray-600">Fileserver'daki Excel dosyalarından GID'leri analiz edin</p>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Analiz Adı -->
+                <div>
+                    <label for="id_name" class="block text-sm font-medium text-gray-700 mb-1">Analiz Adı *</label>
+                    <input type="text" name="name" id="id_name" 
+                           value="{{ form.name.value|default:'' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                           placeholder="Örn: Kasım 2025 AD Log Analizi"
+                           required>
+                    {% if form.name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Açıklama -->
+                <div>
+                    <label for="id_description" class="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
+                    <textarea name="description" id="id_description" rows="2"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                              placeholder="Analiz hakkında notlar...">{{ form.description.value|default:'' }}</textarea>
+                </div>
+
+                <!-- Kaynak Path Seçimi -->
+                <div>
+                    <label for="id_source_path_config" class="block text-sm font-medium text-gray-700 mb-1">Kaynak Path *</label>
+                    <select name="source_path_config" id="id_source_path_config" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                            required>
+                        <option value="">-- Path Seçin --</option>
+                        {% for sp in source_paths %}
+                        <option value="{{ sp.pk }}" {% if form.source_path_config.value == sp.pk %}selected{% endif %} {% if sp.is_default %}selected{% endif %}>
+                            {{ sp.name }} {% if sp.is_default %}(Varsayılan){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-1 text-xs text-gray-500">
+                        <a href="{% url 'it_tools:source_path_list' %}" class="text-indigo-600 hover:text-indigo-800">Path tanımlarını yönet →</a>
+                    </p>
+                </div>
+
+                <!-- Yıl ve Ay Seçimi -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="id_year" class="block text-sm font-medium text-gray-700 mb-1">Yıl *</label>
+                        <select name="year" id="id_year" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                required>
+                            {% for yr in year_choices %}
+                            <option value="{{ yr }}" {% if form.year.value|stringformat:'i' == yr|stringformat:'i' %}selected{% endif %}>{{ yr }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="id_month" class="block text-sm font-medium text-gray-700 mb-1">Ay *</label>
+                        <select name="month" id="id_month" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                required>
+                            <option value="1" {% if form.month.value|stringformat:'i' == '1' %}selected{% endif %}>Ocak</option>
+                            <option value="2" {% if form.month.value|stringformat:'i' == '2' %}selected{% endif %}>Şubat</option>
+                            <option value="3" {% if form.month.value|stringformat:'i' == '3' %}selected{% endif %}>Mart</option>
+                            <option value="4" {% if form.month.value|stringformat:'i' == '4' %}selected{% endif %}>Nisan</option>
+                            <option value="5" {% if form.month.value|stringformat:'i' == '5' %}selected{% endif %}>Mayıs</option>
+                            <option value="6" {% if form.month.value|stringformat:'i' == '6' %}selected{% endif %}>Haziran</option>
+                            <option value="7" {% if form.month.value|stringformat:'i' == '7' %}selected{% endif %}>Temmuz</option>
+                            <option value="8" {% if form.month.value|stringformat:'i' == '8' %}selected{% endif %}>Ağustos</option>
+                            <option value="9" {% if form.month.value|stringformat:'i' == '9' %}selected{% endif %}>Eylül</option>
+                            <option value="10" {% if form.month.value|stringformat:'i' == '10' %}selected{% endif %}>Ekim</option>
+                            <option value="11" {% if form.month.value|stringformat:'i' == '11' %}selected{% endif %}>Kasım</option>
+                            <option value="12" {% if form.month.value|stringformat:'i' == '12' %}selected{% endif %}>Aralık</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Bilgi Kutusu -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex">
+                        <svg class="w-5 h-5 text-blue-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div class="text-sm text-blue-700">
+                            <p class="font-medium mb-1">Analiz Süreci</p>
+                            <ol class="list-decimal list-inside space-y-1 text-xs">
+                                <li>Seçilen yıl ve ayın Excel dosyaları fileserver'dan temp klasöre indirilir</li>
+                                <li>Excel dosyalarının D sütunundaki (MatchedQueryElements) GID'ler çıkarılır</li>
+                                <li>Çekilen GID'ler sistemdeki kullanıcı GID'leri ile karşılaştırılır</li>
+                                <li>Sonuçlar belirtilen çıktı klasörüne kaydedilir</li>
+                            </ol>
+                            <p class="mt-2 text-xs">
+                                <strong>Dosya formatı:</strong> EventExport_YYYY-MM-DD.xlsx
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Butonlar -->
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <a href="{% url 'it_tools:ad_log_list' %}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        İptal
+                    </a>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                        {% if object %}Güncelle{% else %}Oluştur{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if not object %}
+<script>
+// Varsayılan yıl ve ay değerlerini ayarla (yeni kayıt için)
+document.addEventListener('DOMContentLoaded', function() {
+    const yearSelect = document.getElementById('id_year');
+    const monthSelect = document.getElementById('id_month');
+    
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    let defaultMonth = now.getMonth(); // 0-indexed, so this is previous month
+    if (defaultMonth === 0) defaultMonth = 12; // Ocak ise, önceki ay Aralık
+    
+    // Yıl seçili değilse varsayılanı ayarla
+    if (!yearSelect.value) {
+        yearSelect.value = currentYear;
+    }
+    
+    // Ay seçili değilse varsayılanı ayarla
+    if (!monthSelect.value) {
+        monthSelect.value = defaultMonth;
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

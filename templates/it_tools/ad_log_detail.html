@@ -1,0 +1,697 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load it_tools_filters %}
+
+{% block title %}{{ analysis.name }} - AD Log Analizi{% endblock %}
+
+{% block extra_head %}
+<style>
+    .log-content {
+        white-space: pre-wrap;
+        font-family: monospace;
+        font-size: 12px;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Başlık -->
+    <div class="flex justify-between items-start mb-6">
+        <div>
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'it_tools:ad_log_list' %}" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold text-gray-800">{{ analysis.name }}</h1>
+                <span class="px-2 py-1 text-xs font-semibold rounded-full 
+                    {% if analysis.status == 'completed' or analysis.status == 'email_sent' %}bg-green-100 text-green-800
+                    {% elif analysis.status == 'processing' %}bg-blue-100 text-blue-800
+                    {% elif analysis.status == 'email_pending' %}bg-yellow-100 text-yellow-800
+                    {% elif analysis.status == 'failed' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ analysis.get_status_display }}
+                </span>
+            </div>
+            <p class="text-gray-600 mt-1">{{ analysis.description|default:"" }}</p>
+        </div>
+        <div class="flex space-x-2">
+            {% if analysis.status == 'pending' %}
+            <button onclick="runAnalysis()" id="btn-run" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Analizi Başlat
+            </button>
+            {% endif %}
+            {% if analysis.status == 'email_pending' or analysis.status == 'completed' %}
+            <button onclick="openEmailModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+                Email Gönder
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- İstatistikler -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-600">İşlenen Dosya</p>
+            <p class="text-2xl font-bold text-gray-800">{{ analysis.processed_files_count }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-600">Toplam GID</p>
+            <p class="text-2xl font-bold text-gray-800">{{ analysis.total_gids_found|intcomma }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-600">Unique GID</p>
+            <p class="text-2xl font-bold text-gray-800">{{ analysis.unique_gids_count|intcomma }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-600">Farklılık</p>
+            <p class="text-2xl font-bold {% if analysis.discrepancy_count > 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                {{ analysis.discrepancy_count|intcomma }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Detay Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Sol Kolon -->
+        <div class="space-y-6">
+            <!-- Kaynak Bilgileri -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Kaynak Bilgileri</h3>
+                <dl class="space-y-3">
+                    {% if analysis.source_path_config %}
+                    <div>
+                        <dt class="text-sm text-gray-600">Path Tanımı</dt>
+                        <dd class="text-sm font-medium text-indigo-600">{{ analysis.source_path_config.name }}</dd>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <dt class="text-sm text-gray-600">Dönem</dt>
+                        <dd class="text-sm font-medium bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full inline-block">
+                            {{ analysis.period_display }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-600">Kaynak Klasör</dt>
+                        <dd class="text-sm font-mono bg-gray-100 p-2 rounded mt-1 break-all">
+                            {% if analysis.source_path_config %}
+                                {{ analysis.source_path_config.source_path }}
+                            {% else %}
+                                {{ analysis.source_path }}
+                            {% endif %}
+                        </dd>
+                    </div>
+                    {% if analysis.source_path_config %}
+                    <div>
+                        <dt class="text-sm text-gray-600">Çıktı Klasörü</dt>
+                        <dd class="text-sm font-mono bg-gray-100 p-2 rounded mt-1 break-all">
+                            {{ analysis.source_path_config.output_path }}
+                        </dd>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <dt class="text-sm text-gray-600">Oluşturulma Tarihi</dt>
+                        <dd class="text-sm">{{ analysis.created_at|date:"d.m.Y H:i" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-600">Oluşturan</dt>
+                        <dd class="text-sm">{{ analysis.created_by.get_full_name|default:analysis.created_by.username }}</dd>
+                    </div>
+                    {% if analysis.error_message %}
+                    <div>
+                        <dt class="text-sm text-gray-600">Hata Mesajı</dt>
+                        <dd class="text-sm text-red-600 bg-red-50 p-2 rounded mt-1">{{ analysis.error_message }}</dd>
+                    </div>
+                    {% endif %}
+                </dl>
+            </div>
+
+            <!-- İşlenen Dosyalar -->
+            {% if processed_files %}
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">İşlenen Dosyalar</h3>
+                <ul class="space-y-2">
+                    {% for file in processed_files %}
+                    <li class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <span class="text-sm">{{ file.original_filename }}</span>
+                        <span class="text-xs text-gray-500">{{ file.gids_count }} GID</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Çıktı Dosyaları -->
+            {% if analysis.status != 'pending' %}
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Çıktı Dosyaları</h3>
+                <div class="space-y-3">
+                    {% if analysis.user_checklist_file %}
+                    <a href="{{ analysis.user_checklist_file.url }}" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                        <svg class="w-8 h-8 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Kullanıcı Kontrol Listesi</p>
+                            <p class="text-xs text-gray-500">Excel (.xlsx)</p>
+                        </div>
+                    </a>
+                    {% endif %}
+                    
+                    {% if analysis.unique_gids_file %}
+                    <a href="{{ analysis.unique_gids_file.url }}" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                        <svg class="w-8 h-8 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Unique GID Listesi</p>
+                            <p class="text-xs text-gray-500">Excel (.xlsx)</p>
+                        </div>
+                    </a>
+                    {% endif %}
+                    
+                    {% if analysis.log_file %}
+                    <a href="{{ analysis.log_file.url }}" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                        <svg class="w-8 h-8 text-orange-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Farklılık Log Dosyası</p>
+                            <p class="text-xs text-gray-500">Text (.txt)</p>
+                        </div>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sağ Kolon -->
+        <div class="space-y-6">
+            <!-- Farklılıklar -->
+            {% if missing_in_system or missing_in_ad %}
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Farklılıklar</h3>
+                
+                <!-- Sistemde Yok -->
+                {% if missing_in_system %}
+                <div class="mb-4">
+                    <h4 class="text-sm font-medium text-red-600 mb-2">Sistemde Olmayan GID'ler</h4>
+                    <div class="max-h-96 overflow-y-auto">
+                        {% for item in missing_in_system %}
+                        <div class="text-xs p-2 bg-red-50 border-l-2 border-red-400 mb-1">
+                            <span class="font-mono font-medium">{{ item.gid }}</span>
+                            {% if item.source_files %}
+                                <span class="text-gray-500 ml-2">
+                                    (
+                                    {% for file in item.source_files %}
+                                        {{ file|extract_day_from_filename }}.{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                    gün)
+                                </span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- AD'de Yok -->
+                {% if missing_in_ad %}
+                <div>
+                    <h4 class="text-sm font-medium text-yellow-600 mb-2">AD'de Olmayan GID'ler</h4>
+                    <div class="max-h-96 overflow-y-auto">
+                        {% for d in missing_in_ad %}
+                        <div class="text-xs p-2 bg-yellow-50 border-l-2 border-yellow-400 mb-1">
+                            <span class="font-mono font-medium">{{ d.gid }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Email Bilgileri -->
+            {% if analysis.email_sent_at %}
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Email Bilgileri</h3>
+                <dl class="space-y-3">
+                    <div>
+                        <dt class="text-sm text-gray-600">Gönderim Tarihi</dt>
+                        <dd class="text-sm">{{ analysis.email_sent_at|date:"d.m.Y H:i" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-600">Alıcılar (TO)</dt>
+                        <dd class="text-sm">{{ analysis.email_to }}</dd>
+                    </div>
+                    {% if analysis.email_cc %}
+                    <div>
+                        <dt class="text-sm text-gray-600">CC</dt>
+                        <dd class="text-sm">{{ analysis.email_cc }}</dd>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <dt class="text-sm text-gray-600">Konu</dt>
+                        <dd class="text-sm">{{ analysis.email_subject }}</dd>
+                    </div>
+                </dl>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div id="progress-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-2xl max-w-md w-full mx-4">
+        <div class="p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-6 text-center">Analiz İşleniyor</h3>
+            
+            <!-- Aşama Göstergesi -->
+            <div class="mb-6 text-center">
+                <div id="step-label" class="text-3xl mb-2">⏳ Hazırlanıyor...</div>
+                <div id="step-message" class="text-sm text-gray-600 min-h-[20px]">İşlem başlatılıyor</div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="mb-2">
+                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                    <span>İlerleme</span>
+                    <span id="progress-text">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <!-- Animasyonlu Spinner -->
+            <div class="flex justify-center mt-6">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            </div>
+            
+            <p class="text-xs text-gray-500 text-center mt-4">
+                Bu işlem birkaç dakika sürebilir. Lütfen bekleyin...
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Email Modal -->
+<div id="emailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-800">Email Önizleme & Gönderme</h3>
+                <button onclick="closeEmailModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="p-6 space-y-4">
+            <!-- TO -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Alıcılar (TO) *</label>
+                <div id="email_to_container" class="w-full min-h-[42px] px-3 py-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 flex flex-wrap gap-2 items-center cursor-text" onclick="document.getElementById('email_to_input').focus()">
+                    <!-- Pills will be inserted here -->
+                    <input type="text" id="email_to_input" class="flex-1 min-w-[120px] outline-none border-none p-0" placeholder="email@example.com">
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Email adresi girin ve Enter'a basın veya virgül ile ayırın.</p>
+            </div>
+            
+            <!-- CC -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">CC</label>
+                <div id="email_cc_container" class="w-full min-h-[42px] px-3 py-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-indigo-500 flex flex-wrap gap-2 items-center cursor-text" onclick="document.getElementById('email_cc_input').focus()">
+                    <!-- Pills will be inserted here -->
+                    <input type="text" id="email_cc_input" class="flex-1 min-w-[120px] outline-none border-none p-0" placeholder="email@example.com">
+                </div>
+            </div>
+            
+            <!-- Subject -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Konu *</label>
+                <input type="text" id="email_subject" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            
+            <!-- Body -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">İçerik *</label>
+                <textarea id="email_body" rows="10" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"></textarea>
+            </div>
+
+            <!-- Ekler -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm font-medium text-gray-700 mb-2">Ekler</p>
+                <ul class="text-sm text-gray-600 space-y-1">
+                    {% if analysis.log_file %}
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                        </svg>
+                        Farklılık Log Dosyası (.txt)
+                    </li>
+                    {% endif %}
+                    {% if analysis.unique_gids_file %}
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                        </svg>
+                        Unique GID Listesi (.xlsx)
+                    </li>
+                    {% endif %}
+                    {% if analysis.user_checklist_file %}
+                    <li class="flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                        </svg>
+                        Kullanıcı Kontrol Listesi (.xlsx)
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+            <button onclick="closeEmailModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                İptal
+            </button>
+            <button onclick="sendEmail()" id="btn-send-email" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                Email Gönder
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const analysisId = {{ analysis.pk }};
+const csrfToken = '{{ csrf_token }}';
+
+// Email Pills Management
+class EmailPillManager {
+    constructor(containerId, inputId) {
+        this.container = document.getElementById(containerId);
+        this.input = document.getElementById(inputId);
+        this.emails = [];
+        this.setupEventListeners();
+    }
+    
+    setupEventListeners() {
+        this.input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ',' || e.key === ';') {
+                e.preventDefault();
+                this.addEmail();
+            } else if (e.key === 'Backspace' && this.input.value === '' && this.emails.length > 0) {
+                this.removeEmail(this.emails.length - 1);
+            }
+        });
+        
+        this.input.addEventListener('blur', () => {
+            if (this.input.value.trim()) {
+                setTimeout(() => this.addEmail(), 100);
+            }
+        });
+        
+        this.input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pastedText = e.clipboardData.getData('text');
+            const emails = pastedText.split(/[,;\s]+/).filter(e => e.trim());
+            emails.forEach(email => this.addEmailDirectly(email.trim()));
+        });
+    }
+    
+    validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    }
+    
+    addEmail() {
+        const email = this.input.value.trim().replace(/[,;]$/, '').trim();
+        if (email) {
+            this.addEmailDirectly(email);
+        }
+    }
+    
+    addEmailDirectly(email) {
+        if (!this.validateEmail(email)) {
+            alert('Ğersiz email adresi: ' + email);
+            this.input.value = '';
+            return;
+        }
+        
+        if (this.emails.includes(email)) {
+            this.input.value = '';
+            return;
+        }
+        
+        this.emails.push(email);
+        this.renderPills();
+        this.input.value = '';
+    }
+    
+    removeEmail(index) {
+        this.emails.splice(index, 1);
+        this.renderPills();
+    }
+    
+    renderPills() {
+        // Clear existing pills (keep only the input)
+        const pills = this.container.querySelectorAll('.email-pill');
+        pills.forEach(pill => pill.remove());
+        
+        // Add pills before input
+        this.emails.forEach((email, index) => {
+            const pill = document.createElement('span');
+            pill.className = 'email-pill inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-800 rounded-md text-sm';
+            pill.innerHTML = `
+                ${email}
+                <button type="button" class="hover:bg-indigo-200 rounded-full p-0.5" onclick="event.stopPropagation()">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+            `;
+            pill.querySelector('button').addEventListener('click', () => this.removeEmail(index));
+            this.container.insertBefore(pill, this.input);
+        });
+    }
+    
+    setEmails(emailString) {
+        if (!emailString) return;
+        const emails = emailString.split(',').map(e => e.trim()).filter(e => e);
+        emails.forEach(email => this.addEmailDirectly(email));
+    }
+    
+    getEmails() {
+        return this.emails.join(', ');
+    }
+}
+
+const emailToManager = new EmailPillManager('email_to_container', 'email_to_input');
+const emailCcManager = new EmailPillManager('email_cc_container', 'email_cc_input');
+
+function openEmailModal() {
+    // Email önizlemesini yükle
+    fetch(`/it-tools/ad-logs/${analysisId}/email-preview/`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            emailToManager.setEmails(data.data.default_to || '');
+            emailCcManager.setEmails(data.data.default_cc || '');
+            document.getElementById('email_subject').value = data.data.subject || '';
+            document.getElementById('email_body').value = data.data.body || '';
+        }
+    });
+    
+    document.getElementById('emailModal').classList.remove('hidden');
+    document.getElementById('emailModal').classList.add('flex');
+}
+
+function closeEmailModal() {
+    document.getElementById('emailModal').classList.add('hidden');
+    document.getElementById('emailModal').classList.remove('flex');
+}
+
+function sendEmail() {
+    const to = emailToManager.getEmails();
+    const cc = emailCcManager.getEmails();
+    const subject = document.getElementById('email_subject').value;
+    const body = document.getElementById('email_body').value;
+    
+    if (!to) {
+        alert('Lütfen en az bir alıcı girin.');
+        return;
+    }
+    if (!subject) {
+        alert('Lütfen email konusunu girin.');
+        return;
+    }
+    
+    const btn = document.getElementById('btn-send-email');
+    btn.disabled = true;
+    btn.textContent = 'Gönderiliyor...';
+    
+    fetch(`/it-tools/ad-logs/${analysisId}/send-email/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ to, cc, subject, body })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Email gönderildi!');
+            closeEmailModal();
+            location.reload();
+        } else {
+            alert('Hata: ' + data.error);
+        }
+        btn.disabled = false;
+        btn.textContent = 'Email Gönder';
+    })
+    .catch(error => {
+        alert('Bir hata oluştu.');
+        console.error(error);
+        btn.disabled = false;
+        btn.textContent = 'Email Gönder';
+    });
+}
+
+// ESC ile modal'ı kapat
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEmailModal();
+        closeProgressModal();
+    }
+});
+
+// ===========================
+// Progress Modal
+// ===========================
+
+let eventSource = null;
+
+function openProgressModal() {
+    document.getElementById('progress-modal').classList.remove('hidden');
+    document.getElementById('progress-modal').classList.add('flex');
+}
+
+function closeProgressModal() {
+    document.getElementById('progress-modal').classList.add('hidden');
+    document.getElementById('progress-modal').classList.remove('flex');
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+    }
+}
+
+function updateProgressUI(data) {
+    const stepMap = {
+        'downloading': { label: 'Dosyalar İndiriliyor', icon: '📥', color: 'blue' },
+        'processing': { label: 'Dosyalar İşleniyor', icon: '⚙️', color: 'indigo' },
+        'comparing': { label: 'Karşılaştırılıyor', icon: '🔍', color: 'purple' },
+        'saving': { label: 'Kaydediliyor', icon: '💾', color: 'green' },
+        'completed': { label: 'Tamamlandı', icon: '✅', color: 'green' }
+    };
+    
+    const stepInfo = stepMap[data.step] || { label: 'İşleniyor...', icon: '⏳', color: 'gray' };
+    
+    // Progress bar güncelle
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const stepLabel = document.getElementById('step-label');
+    const stepMessage = document.getElementById('step-message');
+    
+    progressBar.style.width = data.progress + '%';
+    progressText.textContent = data.progress + '%';
+    stepLabel.innerHTML = `${stepInfo.icon} ${stepInfo.label}`;
+    stepMessage.textContent = data.message || '';
+    
+    // Tamamlandı mı?
+    if (data.step === 'completed' || data.progress >= 100) {
+        setTimeout(() => {
+            closeProgressModal();
+            location.reload();
+        }, 2000);
+    }
+}
+
+function startProgressTracking() {
+    openProgressModal();
+    
+    // SSE bağlantısı kur
+    const progressUrl = `/it-tools/ad-logs/${analysisId}/progress/`;
+    eventSource = new EventSource(progressUrl);
+    
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        updateProgressUI(data);
+    };
+    
+    eventSource.onerror = function(error) {
+        console.error('EventSource error:', error);
+        eventSource.close();
+        
+        // Hata durumunda modal'ı kapat ve sayfayı yenile
+        setTimeout(() => {
+            closeProgressModal();
+            location.reload();
+        }, 1000);
+    };
+}
+
+function runAnalysis() {
+    const btn = document.getElementById('btn-run');
+    btn.disabled = true;
+    btn.textContent = 'Başlatılıyor...';
+    
+    // İlerleme modalını aç
+    startProgressTracking();
+    
+    fetch(`/it-tools/ad-logs/${analysisId}/run/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            alert('Hata: ' + data.error);
+            closeProgressModal();
+            btn.disabled = false;
+            btn.textContent = 'Analizi Başlat';
+        }
+        // Başarı durumunda EventSource zaten tamamlanma mesajını alacak
+    })
+    .catch(error => {
+        alert('Bir hata oluştu.');
+        console.error(error);
+        closeProgressModal();
+        btn.disabled = false;
+        btn.textContent = 'Analizi Başlat';
+    });
+}
+</script>
+{% endblock %}

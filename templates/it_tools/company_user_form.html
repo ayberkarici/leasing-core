@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Kullanıcı Düzenle{% else %}Yeni Kullanıcı{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="max-w-2xl mx-auto">
+        <!-- Başlık -->
+        <div class="mb-6">
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'it_tools:company_user_list' %}" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold text-gray-800">{% if object %}Kullanıcı Düzenle{% else %}Yeni Kullanıcı{% endif %}</h1>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Temel Bilgiler -->
+                <div class="border-b border-gray-200 pb-4 mb-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Temel Bilgiler</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="id_username" class="block text-sm font-medium text-gray-700 mb-1">Kullanıcı Adı *</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.username.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label for="id_email" class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label for="id_first_name" class="block text-sm font-medium text-gray-700 mb-1">Ad</label>
+                            {{ form.first_name }}
+                        </div>
+                        
+                        <div>
+                            <label for="id_last_name" class="block text-sm font-medium text-gray-700 mb-1">Soyad</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Şirket Bilgileri -->
+                <div class="border-b border-gray-200 pb-4 mb-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Şirket Bilgileri</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="id_user_type" class="block text-sm font-medium text-gray-700 mb-1">Kullanıcı Tipi *</label>
+                            {{ form.user_type }}
+                        </div>
+                        
+                        <div>
+                            <label for="id_department" class="block text-sm font-medium text-gray-700 mb-1">Departman</label>
+                            {{ form.department }}
+                        </div>
+                        
+                        <div>
+                            <label for="id_gid" class="block text-sm font-medium text-gray-700 mb-1">GID (Active Directory)</label>
+                            {{ form.gid }}
+                            <p class="mt-1 text-xs text-gray-500">Active Directory Global ID</p>
+                        </div>
+                        
+                        <div>
+                            <label for="id_phone" class="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+                            {{ form.phone }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Şifre -->
+                <div class="border-b border-gray-200 pb-4 mb-4">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">{% if object %}Şifre Değiştir{% else %}Şifre{% endif %}</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="id_password1" class="block text-sm font-medium text-gray-700 mb-1">
+                                Şifre {% if not object %}*{% endif %}
+                            </label>
+                            {{ form.password1 }}
+                            {% if object %}
+                            <p class="mt-1 text-xs text-gray-500">Değiştirmek istemiyorsanız boş bırakın</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            <label for="id_password2" class="block text-sm font-medium text-gray-700 mb-1">
+                                Şifre (Tekrar) {% if not object %}*{% endif %}
+                            </label>
+                            {{ form.password2 }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Durum -->
+                <div class="flex items-center">
+                    {{ form.is_active }}
+                    <label for="id_is_active" class="ml-2 block text-sm text-gray-700">Aktif kullanıcı</label>
+                </div>
+                
+                {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p class="text-sm text-red-600">{{ form.non_field_errors.0 }}</p>
+                </div>
+                {% endif %}
+
+                <!-- Butonlar -->
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <a href="{% url 'it_tools:company_user_list' %}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        İptal
+                    </a>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                        {% if object %}Güncelle{% else %}Oluştur{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

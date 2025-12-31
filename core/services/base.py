@@ -36,6 +36,15 @@ class BaseService:
     def log_debug(self, message: str, **kwargs):
         """Log a debug message."""
         self.logger.debug(f"{self.__class__.__name__}: {message}", extra=kwargs)
+    
+    def success(self, data: Any = None, message: str = "İşlem başarılı") -> 'ServiceResult':
+        """Create and return a successful result."""
+        return ServiceResult.ok(data=data, message=message)
+    
+    def error(self, message: str, errors: Optional[Dict[str, Any]] = None, code: str = "ERROR") -> 'ServiceResult':
+        """Create and return a failed result."""
+        self.log_error(message)
+        return ServiceResult.fail(message=message, errors=errors, code=code)
 
 
 class ServiceResult:

@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'documents',
     'orders',
     'proposals',
+    'it_tools',
 ]
 
 # Try to add crispy forms if installed

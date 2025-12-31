@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">
+                    {% if form.instance.pk %}Email Şablonu Düzenle{% else %}Yeni Email Şablonu{% endif %}
+                </h1>
+                <p class="mt-2 text-sm text-gray-600">
+                    Email şablonlarınızı oluşturun ve yönetin
+                </p>
+            </div>
+            <a href="{% url 'it_tools:email_template_list' %}" 
+               class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                Geri Dön
+            </a>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white shadow rounded-lg">
+        <form method="post" class="p-6 space-y-6">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="rounded-md bg-red-50 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">Formda hatalar var</h3>
+                        <div class="mt-2 text-sm text-red-700">
+                            <ul class="list-disc pl-5 space-y-1">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ field }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Name Field -->
+            <div>
+                <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    Şablon Adı <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       name="{{ form.name.name }}" 
+                       id="{{ form.name.id_for_label }}"
+                       value="{{ form.name.value|default:'' }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                       placeholder="Örn: Aylık AD Log Raporu"
+                       required>
+                {% if form.name.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Usage Type Field -->
+            <div>
+                <label for="{{ form.usage_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    Kullanım Türü <span class="text-red-500">*</span>
+                </label>
+                <select name="{{ form.usage_type.name }}" 
+                        id="{{ form.usage_type.id_for_label }}"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                        required>
+                    <option value="">-- Tür Seçin --</option>
+                    {% for value, label in form.usage_type.field.choices %}
+                        <option value="{{ value }}" {% if form.usage_type.value == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+                {% if form.usage_type.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.usage_type.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Subject Field -->
+            <div>
+                <label for="{{ form.subject.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    Konu Başlığı <span class="text-red-500">*</span>
+                </label>
+                <input type="text" 
+                       name="{{ form.subject.name }}" 
+                       id="{{ form.subject.id_for_label }}"
+                       value="{{ form.subject.value|default:'' }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                       placeholder="Örn: {{analysis_name}} - {{period}} Raporu"
+                       required>
+                {% if form.subject.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.subject.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-1 text-xs text-gray-500">
+                    Dinamik değerler için: {% verbatim %}<code class="text-xs bg-gray-100 px-1 py-0.5 rounded">{{analysis_name}}</code>, 
+                    <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">{{period}}</code>, 
+                    <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">{{date}}</code>, 
+                    <code class="text-xs bg-gray-100 px-1 py-0.5 rounded">{{path_name}}</code>{% endverbatim %}
+                </p>
+            </div>
+
+            <!-- Default TO Field -->
+            <div>
+                <label for="{{ form.default_to.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    Varsayılan Alıcı (TO)
+                </label>
+                <input type="text" 
+                       name="{{ form.default_to.name }}" 
+                       id="{{ form.default_to.id_for_label }}"
+                       value="{{ form.default_to.value|default:'' }}"
+                       placeholder="ornek@sirket.com, ornek2@sirket.com"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                {% if form.default_to.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.default_to.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-1 text-xs text-gray-500">Virgülle ayırarak birden fazla email adresi girebilirsiniz</p>
+            </div>
+
+            <!-- Default CC Field -->
+            <div>
+                <label for="{{ form.default_cc.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    Varsayılan CC
+                </label>
+                <input type="text" 
+                       name="{{ form.default_cc.name }}" 
+                       id="{{ form.default_cc.id_for_label }}"
+                       value="{{ form.default_cc.value|default:'' }}"
+                       placeholder="ornek@sirket.com, ornek2@sirket.com"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                {% if form.default_cc.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.default_cc.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-1 text-xs text-gray-500">Virgülle ayırarak birden fazla email adresi girebilirsiniz</p>
+            </div>
+
+            <!-- Body Field -->
+            <div>
+                <label for="{{ form.body.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    Email İçeriği <span class="text-red-500">*</span>
+                </label>
+                <textarea name="{{ form.body.name }}" 
+                          id="{{ form.body.id_for_label }}"
+                          rows="12"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                          required>{{ form.body.value|default:'' }}</textarea>
+                {% if form.body.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.body.errors.0 }}</p>
+                {% endif %}
+                <div class="mt-2 text-xs text-gray-500">
+                    <p class="font-medium mb-2">Kullanılabilir Değişkenler:</p>
+                    {% verbatim %}
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="col-span-2">
+                            <p class="text-xs font-semibold text-gray-700 mb-1 mt-2">Analiz Bilgileri:</p>
+                        </div>
+                        <div>
+                            <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{analysis_name}}</code>
+                            <span class="text-xs ml-1">- Analiz adı</span>
+                        </div>
+                        <div>
+                            <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{period}}</code>
+                            <span class="text-xs ml-1">- Dönem (Ay/Yıl)</span>
+                        </div>
+                        <div>
+                            <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{date}}</code>
+                            <span class="text-xs ml-1">- Analiz tarihi</span>
+                        </div>
+                        <div>
+                            <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{total_gids}}</code>
+                            <span class="text-xs ml-1">- Toplam GID sayısı</span>
+                        </div>
+                        <div>
+                            <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{unique_gids}}</code>
+                            <span class="text-xs ml-1">- Benzersiz GID sayısı</span>
+                        </div>
+                        <div>
+                            <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{discrepancy_count}}</code>
+                            <span class="text-xs ml-1">- Uyuşmazlık sayısı</span>
+                        </div>
+                        <div class="col-span-2">
+                            <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{unmatched_gids}}</code>
+                            <span class="text-xs ml-1">- Sistemde olmayan GID listesi (virgülle ayrılmış)</span>
+                        </div>
+                        <div class="col-span-2">
+                            <p class="text-xs font-semibold text-gray-700 mb-1 mt-2">Path Bilgileri:</p>
+                        </div>
+                        <div>
+                            <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{path_name}}</code>
+                            <span class="text-xs ml-1">- Path tanım adı</span>
+                        </div>
+                        <div>
+                            <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{source_path}}</code>
+                            <span class="text-xs ml-1">- Kaynak path</span>
+                        </div>
+                        <div class="col-span-2">
+                            <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{output_path}}</code>
+                            <span class="text-xs ml-1">- Çıktı path (sonuç dosyalarının kaydedildiği klasör)</span>
+                        </div>
+                    </div>
+                    {% endverbatim %}
+                </div>
+            </div>
+
+            <!-- Checkboxes -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex items-center">
+                    <input type="checkbox" 
+                           name="{{ form.is_default.name }}" 
+                           id="{{ form.is_default.id_for_label }}"
+                           {% if form.is_default.value %}checked{% endif %}
+                           class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                    <label for="{{ form.is_default.id_for_label }}" class="ml-2 block text-sm text-gray-700">
+                        Bu tip için varsayılan
+                    </label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" 
+                           name="{{ form.is_active.name }}" 
+                           id="{{ form.is_active.id_for_label }}"
+                           {% if form.is_active.value or not form.instance.pk %}checked{% endif %}
+                           class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                    <label for="{{ form.is_active.id_for_label }}" class="ml-2 block text-sm text-gray-700">
+                        Aktif
+                    </label>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-3 pt-6 border-t">
+                <a href="{% url 'it_tools:email_template_list' %}" 
+                   class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    İptal
+                </a>
+                <button type="submit" 
+                        class="px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    {% if form.instance.pk %}Güncelle{% else %}Oluştur{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

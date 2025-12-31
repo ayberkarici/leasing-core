@@ -74,6 +74,22 @@
             background: #94a3b8;
         }
         
+        /* Sidebar scrollbar - dark theme */
+        .sidebar-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar-scrollbar::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        .sidebar-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+        .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+        
         /* Page transition */
         .page-transition {
             animation: fadeIn 0.3s ease-out;
@@ -247,6 +263,29 @@
                 // Remove the hidden message container
                 messageContainer.remove();
             }
+            
+            // Auto-scroll to active navigation item
+            const desktopNav = document.getElementById('desktop-nav');
+            const mobileNav = document.getElementById('mobile-nav');
+            
+            function scrollToActive(navElement) {
+                if (!navElement) return;
+                
+                const activeItem = navElement.querySelector('.bg-slate-800');
+                if (activeItem) {
+                    // Calculate the position to center the active item
+                    const navRect = navElement.getBoundingClientRect();
+                    const itemRect = activeItem.getBoundingClientRect();
+                    const scrollTop = activeItem.offsetTop - (navRect.height / 2) + (itemRect.height / 2);
+                    
+                    // Instant scroll without animation
+                    navElement.scrollTop = scrollTop;
+                }
+            }
+            
+            // Scroll both desktop and mobile navs
+            scrollToActive(desktopNav);
+            scrollToActive(mobileNav);
         });
     </script>
     

@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Path Düzenle{% else %}Yeni Path Ekle{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="max-w-2xl mx-auto">
+        <!-- Başlık -->
+        <div class="mb-6">
+            <a href="{% url 'it_tools:source_path_list' %}" class="text-indigo-600 hover:text-indigo-800 text-sm flex items-center mb-2">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Path Listesine Dön
+            </a>
+            <h1 class="text-2xl font-bold text-gray-800">{% if object %}Path Düzenle{% else %}Yeni Path Ekle{% endif %}</h1>
+            <p class="text-gray-600">Kaynak ve hedef path tanımlarını yapılandırın</p>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Tanım Adı -->
+                <div>
+                    <label for="id_name" class="block text-sm font-medium text-gray-700 mb-1">Tanım Adı *</label>
+                    <input type="text" name="name" id="id_name" 
+                           value="{{ form.name.value|default:'' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                           placeholder="Örn: Production AD Log Path"
+                           required>
+                    {% if form.name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Kullanım Türü -->
+                <div>
+                    <label for="id_usage_type" class="block text-sm font-medium text-gray-700 mb-1">Kullanım Türü *</label>
+                    <select name="usage_type" id="id_usage_type" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                            required>
+                        <option value="">-- Tür Seçin --</option>
+                        {% for usage_type in usage_types %}
+                            <option value="{{ usage_type.id }}" {% if form.usage_type.value == usage_type.id or form.instance.usage_type_id == usage_type.id %}selected{% endif %}>
+                                {{ usage_type.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    {% if form.usage_type.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.usage_type.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500">Bu path hangi işlem için kullanılacak? <a href="{% url 'it_tools:usage_type_list' %}" class="text-indigo-600 hover:text-indigo-900">İş Kollarını Yönet</a></p>
+                </div>
+
+                <!-- Kaynak Path -->
+                <div>
+                    <label for="id_source_path" class="block text-sm font-medium text-gray-700 mb-1">Kaynak Path *</label>
+                    <input type="text" name="source_path" id="id_source_path" 
+                           value="{{ form.source_path.value|default:'' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                           placeholder="/path/to/source/files"
+                           required>
+                    {% if form.source_path.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.source_path.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500">Dosyaların okunacağı kaynak klasör yolu</p>
+                </div>
+
+                <!-- Çıktı Path -->
+                <div>
+                    <label for="id_output_path" class="block text-sm font-medium text-gray-700 mb-1">Çıktı Path *</label>
+                    <input type="text" name="output_path" id="id_output_path" 
+                           value="{{ form.output_path.value|default:'' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                           placeholder="/path/to/output/files"
+                           required>
+                    {% if form.output_path.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.output_path.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-xs text-gray-500">Sonuç dosyalarının kaydedileceği hedef klasör</p>
+                </div>
+
+                <!-- Durum Seçenekleri -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex items-center">
+                        <input type="checkbox" name="is_active" id="id_is_active" 
+                               {% if form.is_active.value or not object %}checked{% endif %}
+                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="id_is_active" class="ml-2 block text-sm text-gray-700">
+                            Aktif
+                        </label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" name="is_default" id="id_is_default" 
+                               {% if form.is_default.value %}checked{% endif %}
+                               class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="id_is_default" class="ml-2 block text-sm text-gray-700">
+                            Bu tip için varsayılan
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Bilgi Kutusu -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex">
+                        <svg class="w-5 h-5 text-blue-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div class="text-sm text-blue-700">
+                            <p class="font-medium mb-1">AD Log İçin Klasör Yapısı</p>
+                            <p class="text-xs">
+                                AD Log analizleri için çıktı klasöründe otomatik olarak <strong>ay-ismi_yıl</strong> formatında alt klasör oluşturulur.
+                                <br>Örnek: <code class="bg-blue-100 px-1 rounded">kasim_2025</code>, <code class="bg-blue-100 px-1 rounded">aralik_2025</code>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Butonlar -->
+                <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <a href="{% url 'it_tools:source_path_list' %}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                        İptal
+                    </a>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                        {% if object %}Güncelle{% else %}Kaydet{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

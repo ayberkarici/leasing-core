@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ customer.company_name }} - Müşteri Detayı{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Başlık -->
+    <div class="flex justify-between items-start mb-6">
+        <div class="flex items-center space-x-4">
+            <a href="{% url 'it_tools:customer_user_list' %}" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">{{ customer.company_name }}</h1>
+                <p class="text-gray-600">{{ customer.contact_person }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sol Kolon - Müşteri Bilgileri -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Firma Bilgileri -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Firma Bilgileri</h3>
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm text-gray-600">Firma Adı</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ customer.company_name }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-600">Vergi Numarası</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ customer.tax_number|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-600">Vergi Dairesi</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ customer.tax_office|default:"-" }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-600">Kayıt Tarihi</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ customer.created_at|date:"d.m.Y H:i" }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- İletişim Bilgileri -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">İletişim Bilgileri</h3>
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm text-gray-600">Yetkili Kişi</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ customer.contact_person }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-600">Email</dt>
+                        <dd class="text-sm font-medium text-gray-900">
+                            <a href="mailto:{{ customer.email }}" class="text-indigo-600 hover:text-indigo-800">{{ customer.email }}</a>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm text-gray-600">Telefon</dt>
+                        <dd class="text-sm font-medium text-gray-900">
+                            <a href="tel:{{ customer.phone }}" class="text-indigo-600 hover:text-indigo-800">{{ customer.phone|default:"-" }}</a>
+                        </dd>
+                    </div>
+                    <div class="md:col-span-2">
+                        <dt class="text-sm text-gray-600">Adres</dt>
+                        <dd class="text-sm font-medium text-gray-900">{{ customer.address|default:"-" }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Sağ Kolon - Hesap Durumu -->
+        <div class="space-y-6">
+            <!-- Hesap Durumu -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Hesap Durumu</h3>
+                
+                {% if customer.user_account %}
+                <!-- Hesabı Var -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-center mb-3">
+                        <svg class="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="text-green-700 font-medium">Aktif Hesap</span>
+                    </div>
+                    <dl class="space-y-2">
+                        <div>
+                            <dt class="text-xs text-green-600">Kullanıcı Adı</dt>
+                            <dd class="text-sm font-medium text-green-800">{{ customer.user_account.username }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-green-600">Email</dt>
+                            <dd class="text-sm font-medium text-green-800">{{ customer.user_account.email }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs text-green-600">Son Giriş</dt>
+                            <dd class="text-sm font-medium text-green-800">{{ customer.user_account.last_login|date:"d.m.Y H:i"|default:"Henüz giriş yapmadı" }}</dd>
+                        </div>
+                    </dl>
+                </div>
+                {% else %}
+                <!-- Hesabı Yok -->
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-center mb-3">
+                        <svg class="h-5 w-5 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <span class="text-yellow-700 font-medium">Hesap Yok</span>
+                    </div>
+                    <p class="text-sm text-yellow-600 mb-4">Bu müşteri için henüz bir hesap oluşturulmamış.</p>
+                </div>
+
+                <!-- Hesap Oluştur Formu -->
+                <form method="post" action="{% url 'it_tools:customer_create_account' customer.pk %}" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Kullanıcı Adı</label>
+                        <input type="text" name="username" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            placeholder="Kullanıcı adı">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" name="email" value="{{ customer.email }}" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            placeholder="Email">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Şifre</label>
+                        <input type="password" name="password" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            placeholder="Şifre">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Şifre (Tekrar)</label>
+                        <input type="password" name="password_confirm" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            placeholder="Şifre tekrar">
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+                        Hesap Oluştur
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+            <!-- Müşteri İşlemleri -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">İşlemler</h3>
+                <div class="space-y-2">
+                    <a href="{% url 'customers:customer_detail' customer.pk %}" class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        Müşteri Sayfasına Git
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

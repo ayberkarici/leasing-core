@@ -86,6 +86,16 @@ class CustomUser(AbstractUser):
         verbose_name=_('Departman')
     )
     
+    # GID (Global ID) for AD integration
+    gid = models.CharField(
+        _('GID'),
+        max_length=100,
+        blank=True,
+        null=True,
+        unique=True,
+        help_text=_('Active Directory Global ID')
+    )
+    
     # Contact information
     phone = models.CharField(
         _('Telefon'),

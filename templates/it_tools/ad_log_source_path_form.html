@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Path Düzenle{% else %}Yeni Path Ekle{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="max-w-2xl mx-auto">
+        <!-- Başlık -->
+        <div class="mb-6">
+            <a href="{% url 'it_tools:source_path_list' %}" class="text-indigo-600 hover:text-indigo-800 text-sm flex items-center mb-2">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Path Listesine Dön
+            </a>
+            <h1 class="text-2xl font-bold text-gray-800">{% if object %}Path Düzenle{% else %}Yeni Path Ekle{% endif %}</h1>
+        </div>
+
+        <!-- Form -->
+        <form method="post" class="bg-white rounded-lg shadow p-6 space-y-6">
+            {% csrf_token %}
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tanım Adı *</label>
+                <input type="text" name="name" value="{{ form.name.value|default:'' }}" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Örn: Ana Fileserver AD Logs">
+                <p class="mt-1 text-xs text-gray-500">Bu path tanımı için açıklayıcı bir isim</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Kaynak Path (Fileserver) *</label>
+                <input type="text" name="source_path" value="{{ form.source_path.value|default:'' }}" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                    placeholder="\\server\logs\ad veya /mnt/fileserver/logs/ad">
+                <p class="mt-1 text-xs text-gray-500">Excel dosyalarının bulunduğu fileserver yolu</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Çıktı Path *</label>
+                <input type="text" name="output_path" value="{{ form.output_path.value|default:'' }}" required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                    placeholder="/home/user/outputs/ad_logs">
+                <p class="mt-1 text-xs text-gray-500">Sonuç dosyalarının kaydedileceği yerel klasör</p>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_active" id="is_active" 
+                        {% if form.is_active.value or not object %}checked{% endif %}
+                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                    <label for="is_active" class="ml-2 block text-sm text-gray-700">Aktif</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_default" id="is_default" 
+                        {% if form.is_default.value %}checked{% endif %}
+                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                    <label for="is_default" class="ml-2 block text-sm text-gray-700">Varsayılan Yap</label>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+                <a href="{% url 'it_tools:source_path_list' %}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                    İptal
+                </a>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                    {% if object %}Güncelle{% else %}Ekle{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
