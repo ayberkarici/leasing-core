@@ -19,8 +19,9 @@ import time
 from core.decorators import admin_required
 from core.mixins import AdminRequiredMixin
 
-from .models import ADLogAnalysis, ADLogSourcePath, ProcessedADFile, SystemGID, GIDDiscrepancy, ADLogEmailTemplate, UsageType
+from .models import ADLogAnalysis, ADLogSourcePath, ProcessedADFile, SystemGID, GIDDiscrepancy, ADLogEmailTemplate, UsageType, BulkUserImport
 from .services.ad_log_service import ADLogService
+from .services.bulk_user_service import process_bulk_import
 from accounts.models import Department
 from customers.models import Customer
 
@@ -464,10 +465,10 @@ def ad_log_send_email(request, pk):
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         ))
     
-    if analysis.user_gids_file:
+    if analysis.user_checklist_file:
         attachments.append((
-            os.path.basename(analysis.user_gids_file.name),
-            analysis.user_gids_file.read(),
+            os.path.basename(analysis.user_checklist_file.name),
+            analysis.user_checklist_file.read(),
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         ))
     
@@ -890,3 +891,270 @@ class EmailTemplateDeleteView(AdminRequiredMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         messages.success(request, 'Email şablonu silindi.')
         return super().delete(request, *args, **kwargs)
+
+
+# ===============================
+# Toplu Kullanıcı Import
+# ===============================
+
+class BulkUserImportForm(forms.ModelForm):
+    """Toplu kullanıcı import formu"""
+    
+    class Meta:
+        model = BulkUserImport
+        fields = ['name', 'excel_file']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': 'Örn: Ocak 2026 Kullanıcı Güncellemesi'
+            }),
+            'excel_file': forms.FileInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500',
+                'accept': '.xlsx,.xls'
+            })
+        }
+    
+    def clean_excel_file(self):
+        file = self.cleaned_data.get('excel_file')
+        if file:
+            # Dosya uzantısı kontrolü
+            ext = os.path.splitext(file.name)[1].lower()
+            if ext not in ['.xlsx', '.xls']:
+                raise forms.ValidationError('Sadece Excel dosyaları (.xlsx, .xls) yüklenebilir.')
+            
+            # Dosya boyutu kontrolü (max 10MB)
+            if file.size > 10 * 1024 * 1024:
+                raise forms.ValidationError('Dosya boyutu 10MB\'dan büyük olamaz.')
+        
+        return file
+
+
+class BulkUserImportListView(AdminRequiredMixin, ListView):
+    """Toplu import geçmişi listesi"""
+    model = BulkUserImport
+    template_name = 'it_tools/bulk_user_import_list.html'
+    context_object_name = 'imports'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        return BulkUserImport.objects.all().order_by('-created_at')
+
+
+class BulkUserImportCreateView(AdminRequiredMixin, CreateView):
+    """Yeni toplu import oluştur"""
+    model = BulkUserImport
+    form_class = BulkUserImportForm
+    template_name = 'it_tools/bulk_user_import_form.html'
+    
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        response = super().form_valid(form)
+        
+        # Import işlemini başlat
+        process_bulk_import(self.object.pk)
+        
+        messages.success(self.request, 'Import işlemi başlatıldı.')
+        return response
+    
+    def get_success_url(self):
+        return reverse('it_tools:bulk_user_import_detail', kwargs={'pk': self.object.pk})
+
+
+class BulkUserImportDetailView(AdminRequiredMixin, DetailView):
+    """Import detayı"""
+    model = BulkUserImport
+    template_name = 'it_tools/bulk_user_import_detail.html'
+    context_object_name = 'import_obj'
+
+
+@login_required
+@admin_required
+def bulk_user_import_download_sample(request):
+    """Örnek Excel dosyası indir"""
+    import openpyxl
+    from io import BytesIO
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Users'
+    
+    # Header'ları ekle
+    headers = [
+        'Title', 'Academic degrees', 'Surname', 'Given name',
+        'Surname (national)', 'Given name (national)', 'Nickname', 'GID',
+        'Function', 'Department (org code)', 'Department (long text)',
+        'Country', 'Location', 'Organisation', 'Company', 'Company Name',
+        'Building', 'Room number', 'Telephone number', 'Alternate phone number',
+        'Mobile phone number', 'E-Mail', 'Cost center', 'ARE/AUN',
+        'CostLocUnitName', 'OrgID', 'Secretary', 'Representation',
+        'Sponsor', 'Manager', 'Record type', 'User type', 'Status',
+        'Letterbox', 'Contract status', 'Properties'
+    ]
+    
+    for col, header in enumerate(headers, 1):
+        ws.cell(row=1, column=col, value=header)
+        # Sütun genişliği ayarla
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = 15
+    
+    # Örnek satır ekle
+    sample_data = [
+        'Mr.', 'Dr.', 'Yılmaz', 'Ahmet',
+        'Yılmaz', 'Ahmet', 'ahmety', 'GID123456',
+        'Manager', 'SALES01', 'Sales Department',
+        'Turkey', 'Istanbul', 'Corp', 'ABC', 'ABC Company',
+        'HQ', '101', '+90 212 555 1234', '+90 212 555 5678',
+        '+90 532 555 9012', 'ahmet.yilmaz@company.com', 'CC001', 'AUN01',
+        'Sales Unit', 'ORG001', '', '',
+        '', 'manager.name@company.com', 'Employee', 'Internal', 'Active',
+        '', 'Permanent', ''
+    ]
+    
+    for col, value in enumerate(sample_data, 1):
+        ws.cell(row=2, column=col, value=value)
+    
+    # Response oluştur
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=kullanici_import_sablonu.xlsx'
+    
+    return response
+
+
+# ===============================
+# Departman Yönetimi
+# ===============================
+
+class DepartmentForm(forms.ModelForm):
+    """Departman formu"""
+    
+    class Meta:
+        model = Department
+        fields = ['name', 'code', 'org_code', 'description', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': 'Departman adı'
+            }),
+            'code': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': 'Otomatik oluşturulur (opsiyonel)'
+            }),
+            'org_code': forms.TextInput(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': 'Excel org code (opsiyonel)'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500',
+                'rows': 3,
+                'placeholder': 'Açıklama (opsiyonel)'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded'
+            })
+        }
+
+
+class DepartmentListView(AdminRequiredMixin, ListView):
+    """Departman listesi"""
+    model = Department
+    template_name = 'it_tools/department_list.html'
+    context_object_name = 'departments'
+    paginate_by = 50
+    
+    def get_queryset(self):
+        queryset = Department.objects.all()
+        
+        # Arama
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(
+                models.Q(name__icontains=search) |
+                models.Q(code__icontains=search) |
+                models.Q(org_code__icontains=search)
+            )
+        
+        # Aktiflik filtresi
+        is_active = self.request.GET.get('is_active')
+        if is_active == '1':
+            queryset = queryset.filter(is_active=True)
+        elif is_active == '0':
+            queryset = queryset.filter(is_active=False)
+        
+        return queryset.order_by('name')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['total_departments'] = Department.objects.count()
+        context['active_departments'] = Department.objects.filter(is_active=True).count()
+        return context
+
+
+class DepartmentCreateView(AdminRequiredMixin, CreateView):
+    """Yeni departman oluştur"""
+    model = Department
+    form_class = DepartmentForm
+    template_name = 'it_tools/department_form.html'
+    success_url = reverse_lazy('it_tools:department_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Departman başarıyla oluşturuldu.')
+        return super().form_valid(form)
+
+
+class DepartmentUpdateView(AdminRequiredMixin, UpdateView):
+    """Departman düzenle"""
+    model = Department
+    form_class = DepartmentForm
+    template_name = 'it_tools/department_form.html'
+    success_url = reverse_lazy('it_tools:department_list')
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Departman başarıyla güncellendi.')
+        return super().form_valid(form)
+
+
+class DepartmentDetailView(AdminRequiredMixin, DetailView):
+    """Departman detayı"""
+    model = Department
+    template_name = 'it_tools/department_detail.html'
+    context_object_name = 'department'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['users'] = self.object.users.all()[:20]
+        context['total_users'] = self.object.users.count()
+        return context
+
+
+class DepartmentDeleteView(AdminRequiredMixin, DeleteView):
+    """Departman sil"""
+    model = Department
+    template_name = 'it_tools/department_confirm_delete.html'
+    success_url = reverse_lazy('it_tools:department_list')
+    
+    def delete(self, request, *args, **kwargs):
+        dept = self.get_object()
+        if dept.users.exists():
+            messages.error(request, f'Bu departmanda {dept.users.count()} kullanıcı var. Önce kullanıcıları başka departmana taşıyın.')
+            return redirect('it_tools:department_detail', pk=dept.pk)
+        messages.success(request, 'Departman silindi.')
+        return super().delete(request, *args, **kwargs)
+
+
+@login_required
+@admin_required
+@require_POST
+def department_toggle_active(request, pk):
+    """Departman aktifliğini değiştir"""
+    dept = get_object_or_404(Department, pk=pk)
+    dept.is_active = not dept.is_active
+    dept.save()
+    status = 'aktif' if dept.is_active else 'pasif'
+    messages.success(request, f'Departman {status} yapıldı.')
+    return redirect('it_tools:department_list')

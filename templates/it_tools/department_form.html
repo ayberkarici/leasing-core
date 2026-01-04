@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Departman Düzenle{% else %}Yeni Departman{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Başlık -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">
+            {% if object %}Departman Düzenle{% else %}Yeni Departman{% endif %}
+        </h1>
+        <p class="text-gray-600">
+            {% if object %}{{ object.name }}{% else %}Sisteme yeni bir departman ekleyin{% endif %}
+        </p>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav class="mb-6">
+        <ol class="flex items-center space-x-2 text-sm text-gray-500">
+            <li><a href="{% url 'it_tools:dashboard' %}" class="hover:text-indigo-600">IT Araçları</a></li>
+            <li><span>/</span></li>
+            <li><a href="{% url 'it_tools:department_list' %}" class="hover:text-indigo-600">Departmanlar</a></li>
+            <li><span>/</span></li>
+            <li class="text-gray-800">{% if object %}Düzenle{% else %}Yeni{% endif %}</li>
+        </ol>
+    </nav>
+
+    <div class="max-w-2xl">
+        <div class="bg-white rounded-lg shadow p-6">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="id_name" class="block text-sm font-medium text-gray-700 mb-1">Departman Adı *</label>
+                    <input type="text" name="name" id="id_name" required
+                           value="{{ form.name.value|default:'' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                           placeholder="Örn: Satış Departmanı">
+                    {% if form.name.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_code" class="block text-sm font-medium text-gray-700 mb-1">Departman Kodu</label>
+                    <input type="text" name="code" id="id_code"
+                           value="{{ form.code.value|default:'' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                           placeholder="Boş bırakılırsa otomatik oluşturulur">
+                    <p class="mt-1 text-sm text-gray-500">Programatik erişim için kod. Örn: SATIS_DEPARTMANI</p>
+                    {% if form.code.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.code.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="id_org_code" class="block text-sm font-medium text-gray-700 mb-1">Organizasyon Kodu</label>
+                    <input type="text" name="org_code" id="id_org_code"
+                           value="{{ form.org_code.value|default:'' }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                           placeholder="Excel'deki org code (opsiyonel)">
+                    <p class="mt-1 text-sm text-gray-500">Excel import sırasında kullanılan "Department (org code)" değeri</p>
+                </div>
+                
+                <div>
+                    <label for="id_description" class="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
+                    <textarea name="description" id="id_description" rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                              placeholder="Departman açıklaması (opsiyonel)">{{ form.description.value|default:'' }}</textarea>
+                </div>
+                
+                <div class="flex items-center">
+                    <input type="checkbox" name="is_active" id="id_is_active"
+                           {% if form.is_active.value or not object %}checked{% endif %}
+                           class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                    <label for="id_is_active" class="ml-2 block text-sm text-gray-700">Aktif</label>
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4 border-t">
+                    <a href="{% url 'it_tools:department_list' %}" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+                        İptal
+                    </a>
+                    <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                        {% if object %}Güncelle{% else %}Oluştur{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

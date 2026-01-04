@@ -13,6 +13,14 @@ urlpatterns = [
     path('usage-types/<int:pk>/edit/', views.UsageTypeUpdateView.as_view(), name='usage_type_edit'),
     path('usage-types/<int:pk>/delete/', views.UsageTypeDeleteView.as_view(), name='usage_type_delete'),
     
+    # Departmanlar
+    path('departments/', views.DepartmentListView.as_view(), name='department_list'),
+    path('departments/create/', views.DepartmentCreateView.as_view(), name='department_create'),
+    path('departments/<int:pk>/', views.DepartmentDetailView.as_view(), name='department_detail'),
+    path('departments/<int:pk>/edit/', views.DepartmentUpdateView.as_view(), name='department_edit'),
+    path('departments/<int:pk>/delete/', views.DepartmentDeleteView.as_view(), name='department_delete'),
+    path('departments/<int:pk>/toggle-active/', views.department_toggle_active, name='department_toggle_active'),
+    
     # AD Log Kaynak Path'leri
     path('source-paths/', views.ADLogSourcePathListView.as_view(), name='source_path_list'),
     path('source-paths/create/', views.ADLogSourcePathCreateView.as_view(), name='source_path_create'),
@@ -36,6 +44,12 @@ urlpatterns = [
     path('users/<int:pk>/edit/', views.CompanyUserUpdateView.as_view(), name='company_user_edit'),
     path('users/<int:pk>/delete/', views.CompanyUserDeleteView.as_view(), name='company_user_delete'),
     path('users/<int:pk>/toggle-active/', views.company_user_toggle_active, name='company_user_toggle_active'),
+    
+    # Toplu Kullanıcı Import
+    path('users/bulk-import/', views.BulkUserImportListView.as_view(), name='bulk_user_import_list'),
+    path('users/bulk-import/create/', views.BulkUserImportCreateView.as_view(), name='bulk_user_import_create'),
+    path('users/bulk-import/<int:pk>/', views.BulkUserImportDetailView.as_view(), name='bulk_user_import_detail'),
+    path('users/bulk-import/download-sample/', views.bulk_user_import_download_sample, name='bulk_user_import_download_sample'),
     
     # Müşteriler (Customers)
     path('customers/', views.CustomerUserListView.as_view(), name='customer_user_list'),

@@ -6,36 +6,38 @@ Custom user model and department management.
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.utils.text import slugify
+import re
 
 
 class Department(models.Model):
     """
     Departman modeli.
-    Şirket içi departmanları temsil eder (Satış, Finans, Hukuk, Operasyon).
+    Şirket içi departmanları temsil eder. Excel'den dinamik olarak oluşturulabilir.
     """
-    
-    class DepartmentType(models.TextChoices):
-        SALES = 'sales', _('Satış')
-        FINANCE = 'finance', _('Finans')
-        LEGAL = 'legal', _('Hukuk')
-        OPERATIONS = 'operations', _('Operasyon')
-        IT = 'it', _('Bilgi Teknolojileri')
-        HR = 'hr', _('İnsan Kaynakları')
     
     name = models.CharField(
         _('Departman Adı'),
-        max_length=100,
+        max_length=255,
         unique=True
     )
-    department_type = models.CharField(
-        _('Departman Tipi'),
-        max_length=20,
-        choices=DepartmentType.choices,
-        default=DepartmentType.SALES
+    code = models.CharField(
+        _('Departman Kodu'),
+        max_length=100,
+        unique=True,
+        blank=True,
+        help_text=_('Otomatik oluşturulur veya manuel girilebilir')
     )
     description = models.TextField(
         _('Açıklama'),
         blank=True
+    )
+    org_code = models.CharField(
+        _('Organizasyon Kodu'),
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text=_('Excel\'deki Department (org code) değeri')
     )
     is_active = models.BooleanField(
         _('Aktif'),
@@ -57,6 +59,30 @@ class Department(models.Model):
     
     def __str__(self):
         return self.name
+    
+    def save(self, *args, **kwargs):
+        # Code otomatik oluştur
+        if not self.code:
+            # Türkçe karakterleri dönüştür ve code oluştur
+            code = self.name.upper()
+            # Türkçe karakter dönüşümü
+            tr_map = {
+                'Ç': 'C', 'Ğ': 'G', 'I': 'I', 'İ': 'I', 'Ö': 'O', 'Ş': 'S', 'Ü': 'U',
+                'ç': 'c', 'ğ': 'g', 'ı': 'i', 'i': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u'
+            }
+            for tr_char, en_char in tr_map.items():
+                code = code.replace(tr_char, en_char)
+            # Sadece alfanumerik ve alt çizgi
+            code = re.sub(r'[^A-Z0-9]', '_', code)
+            code = re.sub(r'_+', '_', code).strip('_')
+            # Uzunluk sınırı
+            self.code = code[:100]
+        super().save(*args, **kwargs)
+    
+    @property
+    def user_count(self):
+        """Bu departmandaki kullanıcı sayısı"""
+        return self.users.count()
 
 
 class CustomUser(AbstractUser):

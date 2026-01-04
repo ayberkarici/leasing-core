@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+
+{% block title %}Yeni Toplu Kullanıcı Import{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Başlık -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Yeni Toplu Kullanıcı Import</h1>
+        <p class="text-gray-600">Excel dosyasından kullanıcıları sisteme ekleyin veya güncelleyin</p>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav class="mb-6">
+        <ol class="flex items-center space-x-2 text-sm text-gray-500">
+            <li><a href="{% url 'it_tools:dashboard' %}" class="hover:text-indigo-600">IT Araçları</a></li>
+            <li><span>/</span></li>
+            <li><a href="{% url 'it_tools:company_user_list' %}" class="hover:text-indigo-600">Kullanıcılar</a></li>
+            <li><span>/</span></li>
+            <li><a href="{% url 'it_tools:bulk_user_import_list' %}" class="hover:text-indigo-600">Toplu Import</a></li>
+            <li><span>/</span></li>
+            <li class="text-gray-800">Yeni</li>
+        </ol>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Form -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow p-6">
+                <form method="post" enctype="multipart/form-data" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label for="id_name" class="block text-sm font-medium text-gray-700 mb-1">Import Adı *</label>
+                        <input type="text" name="name" id="id_name" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                               placeholder="Örn: Ocak 2026 Kullanıcı Güncellemesi">
+                        <p class="mt-1 text-sm text-gray-500">Bu import işlemini tanımlayıcı bir ad verin</p>
+                    </div>
+                    
+                    <div>
+                        <label for="id_excel_file" class="block text-sm font-medium text-gray-700 mb-1">Excel Dosyası *</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-indigo-500 transition" id="drop-zone">
+                            <div class="space-y-1 text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="id_excel_file" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                                        <span>Dosya seçin</span>
+                                        <input id="id_excel_file" name="excel_file" type="file" class="sr-only" accept=".xlsx,.xls" required>
+                                    </label>
+                                    <p class="pl-1">veya sürükleyip bırakın</p>
+                                </div>
+                                <p class="text-xs text-gray-500">Excel (.xlsx, .xls) - Max 10MB</p>
+                                <p id="selected-file" class="text-sm text-indigo-600 font-medium hidden"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-4 border-t">
+                        <a href="{% url 'it_tools:bulk_user_import_list' %}" class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+                            İptal
+                        </a>
+                        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                            </svg>
+                            Import Başlat
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Yardım Paneli -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">📋 Excel Formatı</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Zorunlu Alanlar:</h4>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                                <strong>GID</strong> - Benzersiz kullanıcı kimliği
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                                <strong>E-Mail</strong> - Email adresi
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                                <strong>Given name</strong> - Ad
+                            </li>
+                            <li class="flex items-center">
+                                <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                                <strong>Surname</strong> - Soyad
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">İşlem Mantığı:</h4>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li>• GID ile eşleşen kullanıcı varsa <strong>güncellenir</strong></li>
+                            <li>• GID ile eşleşen kullanıcı yoksa <strong>oluşturulur</strong></li>
+                            <li>• Değişiklik yoksa satır <strong>atlanır</strong></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="pt-4 border-t">
+                        <a href="{% url 'it_tools:bulk_user_import_download_sample' %}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            Örnek Excel Şablonunu İndir
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Desteklenen Sütunlar -->
+            <div class="bg-white rounded-lg shadow p-6 mt-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">📑 Desteklenen Sütunlar</h3>
+                <div class="max-h-64 overflow-y-auto">
+                    <ul class="text-xs text-gray-600 space-y-1">
+                        <li>Title</li>
+                        <li>Academic degrees</li>
+                        <li>Surname</li>
+                        <li>Given name</li>
+                        <li>Surname (national)</li>
+                        <li>Given name (national)</li>
+                        <li>Nickname</li>
+                        <li>GID</li>
+                        <li>Function</li>
+                        <li>Department (org code)</li>
+                        <li>Department (long text)</li>
+                        <li>Country</li>
+                        <li>Location</li>
+                        <li>Organisation</li>
+                        <li>Company</li>
+                        <li>Company Name</li>
+                        <li>Building</li>
+                        <li>Room number</li>
+                        <li>Telephone number</li>
+                        <li>Alternate phone number</li>
+                        <li>Mobile phone number</li>
+                        <li>E-Mail</li>
+                        <li>Cost center</li>
+                        <li>ARE/AUN</li>
+                        <li>CostLocUnitName</li>
+                        <li>OrgID</li>
+                        <li>Secretary</li>
+                        <li>Representation</li>
+                        <li>Sponsor</li>
+                        <li>Manager</li>
+                        <li>Record type</li>
+                        <li>User type</li>
+                        <li>Status</li>
+                        <li>Letterbox</li>
+                        <li>Contract status</li>
+                        <li>Properties</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('id_excel_file');
+    const dropZone = document.getElementById('drop-zone');
+    const selectedFile = document.getElementById('selected-file');
+    
+    // Dosya seçildiğinde
+    fileInput.addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            selectedFile.textContent = '📄 ' + this.files[0].name;
+            selectedFile.classList.remove('hidden');
+        }
+    });
+    
+    // Drag & Drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight(e) {
+        dropZone.classList.add('border-indigo-500', 'bg-indigo-50');
+    }
+    
+    function unhighlight(e) {
+        dropZone.classList.remove('border-indigo-500', 'bg-indigo-50');
+    }
+    
+    dropZone.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files && files[0]) {
+            fileInput.files = files;
+            selectedFile.textContent = '📄 ' + files[0].name;
+            selectedFile.classList.remove('hidden');
+        }
+    }
+});
+</script>
+{% endblock %}

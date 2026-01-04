@@ -13,19 +13,23 @@ class DepartmentAdmin(admin.ModelAdmin):
     """
     Departman admin yapılandırması.
     """
-    list_display = ['name', 'department_type', 'is_active', 'created_at']
-    list_filter = ['department_type', 'is_active']
-    search_fields = ['name', 'description']
+    list_display = ['name', 'code', 'org_code', 'user_count', 'is_active', 'created_at']
+    list_filter = ['is_active']
+    search_fields = ['name', 'code', 'org_code', 'description']
     ordering = ['name']
     
     fieldsets = (
         (None, {
-            'fields': ('name', 'department_type', 'description')
+            'fields': ('name', 'code', 'org_code', 'description')
         }),
         (_('Durum'), {
             'fields': ('is_active',)
         }),
     )
+    
+    def user_count(self, obj):
+        return obj.user_count
+    user_count.short_description = _('Kullanıcı Sayısı')
 
 
 @admin.register(CustomUser)

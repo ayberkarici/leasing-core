@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ department.name }} - Departman Detayı{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Başlık -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">{{ department.name }}</h1>
+            <p class="text-gray-600">Departman #{{ department.pk }}</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'it_tools:department_edit' department.pk %}" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                Düzenle
+            </a>
+            <a href="{% url 'it_tools:department_list' %}" class="text-gray-600 hover:text-gray-800 flex items-center px-4 py-2">
+                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Listeye Dön
+            </a>
+        </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav class="mb-6">
+        <ol class="flex items-center space-x-2 text-sm text-gray-500">
+            <li><a href="{% url 'it_tools:dashboard' %}" class="hover:text-indigo-600">IT Araçları</a></li>
+            <li><span>/</span></li>
+            <li><a href="{% url 'it_tools:department_list' %}" class="hover:text-indigo-600">Departmanlar</a></li>
+            <li><span>/</span></li>
+            <li class="text-gray-800">{{ department.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sol Panel - Bilgiler -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Departman Bilgileri -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Departman Bilgileri</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <span class="text-sm text-gray-500">Durum</span>
+                        <p class="mt-1">
+                            {% if department.is_active %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Aktif</span>
+                            {% else %}
+                            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Pasif</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <span class="text-sm text-gray-500">Kod</span>
+                        <p class="font-mono text-gray-800">{{ department.code }}</p>
+                    </div>
+                    
+                    {% if department.org_code %}
+                    <div>
+                        <span class="text-sm text-gray-500">Organizasyon Kodu</span>
+                        <p class="font-mono text-gray-800">{{ department.org_code }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if department.description %}
+                    <div>
+                        <span class="text-sm text-gray-500">Açıklama</span>
+                        <p class="text-gray-800">{{ department.description }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div>
+                        <span class="text-sm text-gray-500">Oluşturulma Tarihi</span>
+                        <p class="text-gray-800">{{ department.created_at|date:"d.m.Y H:i" }}</p>
+                    </div>
+                    
+                    <div>
+                        <span class="text-sm text-gray-500">Son Güncelleme</span>
+                        <p class="text-gray-800">{{ department.updated_at|date:"d.m.Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- İstatistikler -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">İstatistikler</h3>
+                
+                <div class="text-center py-4">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 mb-3">
+                        <span class="text-2xl font-bold text-indigo-600">{{ total_users }}</span>
+                    </div>
+                    <p class="text-gray-600">Toplam Kullanıcı</p>
+                </div>
+            </div>
+            
+            <!-- Tehlike Bölgesi -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-red-600 mb-4">Tehlike Bölgesi</h3>
+                
+                {% if total_users > 0 %}
+                <p class="text-sm text-gray-600 mb-4">
+                    Bu departmanda {{ total_users }} kullanıcı bulunuyor. Silmeden önce tüm kullanıcıları başka bir departmana taşıyın.
+                </p>
+                <button disabled class="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed">
+                    Departmanı Sil
+                </button>
+                {% else %}
+                <p class="text-sm text-gray-600 mb-4">
+                    Bu departmanı sildiğinizde geri alamazsınız.
+                </p>
+                <a href="{% url 'it_tools:department_delete' department.pk %}" class="block w-full text-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                    Departmanı Sil
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sağ Panel - Kullanıcılar -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-800">Departman Kullanıcıları</h3>
+                    <span class="text-sm text-gray-500">{{ total_users }} kişi</span>
+                </div>
+                
+                {% if users %}
+                <div class="divide-y divide-gray-200">
+                    {% for user in users %}
+                    <div class="px-6 py-4 flex items-center justify-between hover:bg-gray-50">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                {% if user.avatar %}
+                                <img class="h-10 w-10 rounded-full object-cover" src="{{ user.avatar.url }}" alt="">
+                                {% else %}
+                                <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                                    <span class="text-indigo-600 font-medium text-sm">{{ user.initials }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">{{ user.full_name }}</div>
+                                <div class="text-sm text-gray-500">{{ user.email }}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            {% if user.gid %}
+                            <span class="font-mono text-xs text-gray-500">{{ user.gid }}</span>
+                            {% endif %}
+                            <a href="{% url 'it_tools:company_user_detail' user.pk %}" class="text-indigo-600 hover:text-indigo-900 text-sm">Detay</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if total_users > 20 %}
+                <div class="px-6 py-4 bg-gray-50 text-center">
+                    <a href="{% url 'it_tools:company_user_list' %}?department={{ department.pk }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                        Tüm {{ total_users }} kullanıcıyı gör →
+                    </a>
+                </div>
+                {% endif %}
+                {% else %}
+                <div class="px-6 py-12 text-center text-gray-500">
+                    <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <p>Bu departmanda henüz kullanıcı yok.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

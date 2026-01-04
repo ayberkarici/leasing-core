@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Import Detayı - {{ import_obj.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Başlık -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">{{ import_obj.name }}</h1>
+            <p class="text-gray-600">Import #{{ import_obj.pk }}</p>
+        </div>
+        <a href="{% url 'it_tools:bulk_user_import_list' %}" class="text-gray-600 hover:text-gray-800 flex items-center">
+            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Listeye Dön
+        </a>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav class="mb-6">
+        <ol class="flex items-center space-x-2 text-sm text-gray-500">
+            <li><a href="{% url 'it_tools:dashboard' %}" class="hover:text-indigo-600">IT Araçları</a></li>
+            <li><span>/</span></li>
+            <li><a href="{% url 'it_tools:company_user_list' %}" class="hover:text-indigo-600">Kullanıcılar</a></li>
+            <li><span>/</span></li>
+            <li><a href="{% url 'it_tools:bulk_user_import_list' %}" class="hover:text-indigo-600">Toplu Import</a></li>
+            <li><span>/</span></li>
+            <li class="text-gray-800">#{{ import_obj.pk }}</li>
+        </ol>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sol Panel - Özet -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Durum Kartı -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Durum</h3>
+                
+                <div class="text-center py-4">
+                    {% if import_obj.status == 'completed' %}
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-3">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg font-semibold text-green-600">Tamamlandı</p>
+                    {% elif import_obj.status == 'completed_with_errors' %}
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 mb-3">
+                        <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg font-semibold text-yellow-600">Hatalarla Tamamlandı</p>
+                    {% elif import_obj.status == 'processing' %}
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-3">
+                        <svg class="w-8 h-8 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg font-semibold text-blue-600">İşleniyor...</p>
+                    {% elif import_obj.status == 'failed' %}
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-3">
+                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg font-semibold text-red-600">Başarısız</p>
+                    {% else %}
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-3">
+                        <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg font-semibold text-gray-600">Beklemede</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- İstatistikler -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">İstatistikler</h3>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center py-2 border-b">
+                        <span class="text-gray-600">Toplam Satır</span>
+                        <span class="font-semibold text-gray-800">{{ import_obj.total_rows }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b">
+                        <span class="text-gray-600">Oluşturulan</span>
+                        <span class="font-semibold text-green-600">+{{ import_obj.created_count }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b">
+                        <span class="text-gray-600">Güncellenen</span>
+                        <span class="font-semibold text-blue-600">~{{ import_obj.updated_count }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-b">
+                        <span class="text-gray-600">Atlanan</span>
+                        <span class="font-semibold text-gray-500">={{ import_obj.skipped_count }}</span>
+                    </div>
+                    {% if import_obj.error_count > 0 %}
+                    <div class="flex justify-between items-center py-2">
+                        <span class="text-gray-600">Hatalı</span>
+                        <span class="font-semibold text-red-600">!{{ import_obj.error_count }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Bilgiler -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Bilgiler</h3>
+                
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <span class="text-gray-500">Oluşturan:</span>
+                        <p class="font-medium text-gray-800">
+                            {% if import_obj.created_by %}
+                            {{ import_obj.created_by.full_name }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Başlangıç:</span>
+                        <p class="font-medium text-gray-800">{{ import_obj.created_at|date:"d.m.Y H:i:s" }}</p>
+                    </div>
+                    {% if import_obj.completed_at %}
+                    <div>
+                        <span class="text-gray-500">Bitiş:</span>
+                        <p class="font-medium text-gray-800">{{ import_obj.completed_at|date:"d.m.Y H:i:s" }}</p>
+                    </div>
+                    {% endif %}
+                    {% if import_obj.excel_file %}
+                    <div>
+                        <span class="text-gray-500">Dosya:</span>
+                        <p class="font-medium text-gray-800 break-all">{{ import_obj.excel_file.name|cut:"bulk_imports/users/" }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ Panel - Loglar -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- İşlem Logu -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b">
+                    <h3 class="text-lg font-semibold text-gray-800">İşlem Logu</h3>
+                </div>
+                <div class="p-6">
+                    {% if import_obj.log %}
+                    <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm overflow-x-auto max-h-96 overflow-y-auto font-mono">{{ import_obj.log }}</pre>
+                    {% else %}
+                    <p class="text-gray-500 text-center py-4">Log kaydı yok</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Hatalar -->
+            {% if import_obj.error_details %}
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b bg-red-50">
+                    <h3 class="text-lg font-semibold text-red-800 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        Hatalar ({{ import_obj.error_count }})
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <pre class="bg-red-50 text-red-800 p-4 rounded-lg text-sm overflow-x-auto max-h-64 overflow-y-auto font-mono">{{ import_obj.error_details }}</pre>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if import_obj.status == 'processing' %}
+<script>
+// İşlem devam ediyorsa sayfayı 5 saniyede bir yenile
+setTimeout(function() {
+    location.reload();
+}, 5000);
+</script>
+{% endif %}
+{% endblock %}

@@ -304,3 +304,50 @@ class ADLogEmailTemplate(models.Model):
             'to': self.default_to or '',
             'cc': self.default_cc or ''
         }
+
+
+class BulkUserImport(models.Model):
+    """Toplu kullanıcı import kaydı"""
+    
+    STATUS_CHOICES = [
+        ('pending', 'Beklemede'),
+        ('processing', 'İşleniyor'),
+        ('completed', 'Tamamlandı'),
+        ('completed_with_errors', 'Hatalarla Tamamlandı'),
+        ('failed', 'Başarısız'),
+    ]
+    
+    name = models.CharField('Import Adı', max_length=255)
+    excel_file = models.FileField('Excel Dosyası', upload_to='bulk_imports/users/')
+    status = models.CharField('Durum', max_length=30, choices=STATUS_CHOICES, default='pending')
+    
+    # İstatistikler
+    total_rows = models.IntegerField('Toplam Satır', default=0)
+    created_count = models.IntegerField('Oluşturulan', default=0)
+    updated_count = models.IntegerField('Güncellenen', default=0)
+    skipped_count = models.IntegerField('Atlanan', default=0)
+    error_count = models.IntegerField('Hatalı', default=0)
+    
+    # Log
+    log = models.TextField('İşlem Logu', blank=True, null=True)
+    error_details = models.TextField('Hata Detayları', blank=True, null=True)
+    
+    # İşlem yapan kullanıcı
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='bulk_user_imports',
+        verbose_name='Oluşturan'
+    )
+    
+    created_at = models.DateTimeField('Oluşturulma Tarihi', auto_now_add=True)
+    completed_at = models.DateTimeField('Tamamlanma Tarihi', null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'Toplu Kullanıcı Import'
+        verbose_name_plural = 'Toplu Kullanıcı Import\'ları'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.name} - {self.get_status_display()}"
