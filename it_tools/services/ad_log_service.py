@@ -2,6 +2,7 @@ import os
 import glob
 import shutil
 import calendar
+import warnings
 from datetime import datetime
 from typing import List, Dict, Set, Optional, Tuple
 from dataclasses import dataclass
@@ -14,6 +15,9 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 
 from core.services.base import BaseService, ServiceResult
+
+# openpyxl stil uyarılarını bastır
+warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 
 try:
     import openpyxl
@@ -295,16 +299,24 @@ class ADLogService(BaseService):
             return self.error("Önce Excel dosyalarını işlemelisiniz.")
         
         # Kullanıcıların GID'lerini al (CustomUser modelindeki gid alanı)
-        user_gids = set(
+        # Case-insensitive karşılaştırma için küçük harfe çevir
+        user_gids_raw = list(
             User.objects.exclude(gid__isnull=True)
             .exclude(gid='')
             .values_list('gid', flat=True)
         )
+        user_gids_lower = set(gid.lower() for gid in user_gids_raw)
         
         self.update_progress('comparing', 30, 'Sistem GID\'leri alındı...')
         
-        # Excel'de olup kullanıcılarda olmayan GID'ler
-        unmatched_gids = self._gids_from_files - user_gids
+        # Excel'de olup kullanıcılarda olmayan GID'ler (case-insensitive)
+        # Orijinal GID'leri tut, karşılaştırma için lowercase kullan
+        file_gids_lower_map = {gid.lower(): gid for gid in self._gids_from_files}
+        unmatched_gids = set(
+            file_gids_lower_map[gid_lower] 
+            for gid_lower in file_gids_lower_map.keys() 
+            if gid_lower not in user_gids_lower
+        )
         
         self.update_progress('comparing', 60, 'Farklılıklar tespit ediliyor...')
         
@@ -338,7 +350,7 @@ class ADLogService(BaseService):
         
         return self.success({
             'total_in_files': len(self._gids_from_files),
-            'total_user_gids': len(user_gids),
+            'total_user_gids': len(user_gids_lower),
             'unmatched_count': len(unmatched_gids),
             'matched_count': len(self._gids_from_files) - len(unmatched_gids),
             'unmatched_gids': list(unmatched_gids),

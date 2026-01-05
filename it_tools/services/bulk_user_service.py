@@ -3,6 +3,7 @@ Toplu kullanıcı import servisi
 Excel dosyasından kullanıcıları sisteme ekler veya günceller
 """
 
+import warnings
 import openpyxl
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -11,6 +12,9 @@ from datetime import datetime
 import logging
 
 from accounts.models import Department
+
+# openpyxl stil uyarılarını bastır
+warnings.filterwarnings('ignore', category=UserWarning, module='openpyxl')
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -81,25 +85,30 @@ class BulkUserImportService:
     
     def process(self):
         """Excel dosyasını işle"""
+        wb = None
         try:
             self.import_record.status = 'processing'
             self.import_record.save()
             
             self.log("İşlem başlatıldı...")
             
-            # Excel dosyasını aç
-            wb = openpyxl.load_workbook(self.import_record.excel_file.path)
+            # Excel dosyasını aç (read_only ve data_only ile daha hızlı ve güvenli)
+            wb = openpyxl.load_workbook(
+                self.import_record.excel_file.path, 
+                read_only=True, 
+                data_only=True
+            )
             ws = wb.active
             
             # Header'ları al
-            headers = [cell.value for cell in ws[1]]
+            headers = [cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))]
             self.log(f"Bulunan sütunlar: {len(headers)}")
             
             # Header mapping oluştur
             header_index = {}
             for idx, header in enumerate(headers):
-                if header and header.strip() in EXCEL_HEADER_MAPPING:
-                    header_index[EXCEL_HEADER_MAPPING[header.strip()]] = idx
+                if header and str(header).strip() in EXCEL_HEADER_MAPPING:
+                    header_index[EXCEL_HEADER_MAPPING[str(header).strip()]] = idx
             
             self.log(f"Eşleştirilen sütunlar: {len(header_index)}")
             
@@ -112,12 +121,16 @@ class BulkUserImportService:
                 self.import_record.save()
                 return False
             
-            # Satırları işle
-            total_rows = ws.max_row - 1  # Header hariç
+            # Toplam satır sayısını hesapla (read_only modda max_row güvenilir olmayabilir)
+            rows_list = list(ws.iter_rows(min_row=2, values_only=True))
+            total_rows = len(rows_list)
             self.import_record.total_rows = total_rows
             self.log(f"Toplam {total_rows} satır işlenecek")
             
-            for row_num, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            # Workbook'u erken kapat (broken pipe hatasını önlemek için)
+            wb.close()
+            
+            for row_num, row in enumerate(rows_list, start=2):
                 try:
                     self._process_row(row_num, row, header_index)
                 except Exception as e:
@@ -169,22 +182,42 @@ class BulkUserImportService:
             self.skipped_count += 1
             return
         
-        # Email zorunlu (username olarak kullanılacak)
+        # Email - yoksa GID'den oluştur (bot hesaplar için)
         email = get_value('email')
+        is_bot_account = False
         if not email:
-            self.error(row_num, f"GID {gid}: Email adresi bulunamadı")
-            return
+            # Bot/sistem hesabı - email'i GID'den oluştur
+            email = f"{gid.lower()}@bot.local"
+            is_bot_account = True
+            self.log(f"GID {gid}: Email bulunamadı, otomatik oluşturuldu: {email}")
         
         # Ad ve soyad
         first_name = get_value('first_name') or ''
         last_name = get_value('last_name') or ''
         
         if not first_name and not last_name:
-            self.error(row_num, f"GID {gid}: Ad veya soyad bulunamadı")
-            return
+            # Bot hesap ise GID'yi isim olarak kullan
+            if is_bot_account:
+                first_name = gid
+                last_name = '(Bot)'
+            else:
+                self.error(row_num, f"GID {gid}: Ad veya soyad bulunamadı")
+                return
         
         # Username - email'den @ öncesini al
         username = email.split('@')[0].lower()
+        
+        # Departman bilgisini al (user_type için gerekli)
+        dept_name = get_value('department_long_text')
+        dept_org_code = get_value('department_org_code')
+        department = None
+        user_type = 'salesperson'  # Varsayılan
+        
+        if dept_name:
+            department = self._get_or_create_department(dept_name, dept_org_code)
+            if department:
+                # Departman adından user_type belirle
+                user_type = self._determine_user_type(department.name)
         
         # Kullanıcıyı bul veya oluştur (GID'ye göre)
         try:
@@ -196,7 +229,8 @@ class BulkUserImportService:
                         'email': email,
                         'first_name': first_name,
                         'last_name': last_name,
-                        'user_type': 'salesperson',  # Varsayılan olarak satış elemanı
+                        'user_type': user_type,
+                        'department': department,
                         'is_active': True,
                     }
                 )
@@ -233,20 +267,49 @@ class BulkUserImportService:
                     else:
                         self.skipped_count += 1
                 
-                # Departman eşleştirmesi - her zaman güncelle
-                dept_name = get_value('department_long_text')
-                dept_org_code = get_value('department_org_code')
-                
-                if dept_name:
-                    dept = self._get_or_create_department(dept_name, dept_org_code)
-                    if dept and user.department != dept:
-                        user.department = dept
+                # Departman ve user_type güncelle (mevcut kullanıcılar için)
+                if not created and department:
+                    updated_dept = False
+                    if user.department != department:
+                        user.department = department
+                        updated_dept = True
+                    if user.user_type != user_type:
+                        user.user_type = user_type
+                        updated_dept = True
+                    if updated_dept:
                         user.save()
-                        if not created:
-                            self.log(f"Kullanıcı departmanı güncellendi: {gid} -> {dept.name}")
+                        self.log(f"Kullanıcı departman/tipi güncellendi: {gid} -> {department.name} ({user_type})")
                 
         except Exception as e:
             self.error(row_num, f"GID {gid}: Kayıt hatası - {str(e)}")
+    
+    def _determine_user_type(self, dept_name):
+        """
+        Departman adına göre kullanıcı tipini belirle.
+        Departman adı içindeki anahtar kelimelere göre user_type döndürür.
+        """
+        if not dept_name:
+            return 'salesperson'  # Varsayılan
+        
+        dept_lower = dept_name.lower()
+        
+        # Yönetici/Admin departmanları
+        admin_keywords = ['yönetim', 'yonetim', 'müdürlük', 'mudurluk', 'direktör', 
+                         'direktor', 'ceo', 'cto', 'cfo', 'genel müdür', 'it', 
+                         'bilgi işlem', 'bilgi teknoloji', 'insan kaynakları', 'ik']
+        for keyword in admin_keywords:
+            if keyword in dept_lower:
+                return 'admin'
+        
+        # Müşteri departmanları (genellikle dış paydaşlar)
+        customer_keywords = ['müşteri', 'musteri', 'bayi', 'distribütör', 'distributor', 
+                            'partner', 'tedarikçi', 'tedarikci']
+        for keyword in customer_keywords:
+            if keyword in dept_lower:
+                return 'customer'
+        
+        # Varsayılan: Satış elemanı (çoğu iç kullanıcı)
+        return 'salesperson'
     
     def _get_or_create_department(self, dept_name, org_code=None):
         """Departman adına göre bul veya oluştur"""
